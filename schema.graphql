@@ -1,0 +1,33 @@
+type TransferV1 {
+  id: ID!
+  from: String!
+  to: String!
+  amount: BigInt!
+}
+
+type OrganizationV1 {
+  id: ID!
+}
+
+type AvatarV1 {
+  id: ID!
+  token: String
+  organization: OrganizationV1
+}
+
+type TrustV1 {
+  id: ID!
+  limit: BigInt!
+}
+
+type CirclesV1 {
+  id: ID!
+  balance: BigInt!
+}
+
+type GlobalStatsV1 {
+  id: ID!
+  signups: BigInt!
+  transfers: BigInt!
+  trusts: BigInt!
+}

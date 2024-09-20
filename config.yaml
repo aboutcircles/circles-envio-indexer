@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: circles-indexer
+field_selection:
+  transaction_fields:
+    - hash
+contracts:
+- name: Hub
+  handler: src/EventHandlers.ts
+  events:
+  - event: HubTransfer(address indexed from, address indexed to, uint256 amount)
+  - event: OrganizationSignup(address indexed organization)
+  - event: Signup(address indexed user, address token)
+  - event: Trust(address indexed canSendTo, address indexed user, uint256 limit)
+- name: PersonalCRC
+  abi_file_path: abis/PersonalCRC.json
+  handler: src/EventHandlers.ts
+  events:
+  - event: Transfer(address indexed from, address indexed to, uint256 amount)
+
+networks:
+# - id: 100
+#   start_block: 12529458
+#   contracts:
+#   - name: Hub
+#     address:
+#     - 0x29b9a7fBb8995b2423a71cC17cf9810798F6C543
+#   - name: PersonalCRC
+- id: 10200
+  start_block: 2211707
+  contracts:
+  - name: Hub
+    address:
+    - 0xdbF22D4e8962Db3b2F1d9Ff55be728A887e47710
+  - name: PersonalCRC
+rollback_on_reorg: false
