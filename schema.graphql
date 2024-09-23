@@ -31,3 +31,48 @@ type GlobalStatsV1 {
   transfers: BigInt!
   trusts: BigInt!
 }
+
+# v2 schema
+
+type Circles {
+  # id is: id + address
+  id: ID!
+  balance: BigInt!
+  avatar: Avatar!
+}
+
+type Avatar {
+  id: ID!
+  stopped: Boolean!
+  circles: [Circles!]! @derivedFrom(field: "avatar")
+  lastMint: BigInt!
+  inviter: String
+  organization: Organization
+  group: Group
+}
+
+type Organization {
+  id: ID!
+  name: String!
+}
+
+type Group {
+  id: ID!
+  mint: String!
+  treasury: String!
+  name: String!
+  symbol: String!
+}
+
+type Trust {
+  # truster-trustee
+  id: ID!
+  expiry: BigInt!
+}
+
+type GlobalStats {
+  id: ID!
+  signups: BigInt!
+  transfers: BigInt!
+  trusts: BigInt!
+}

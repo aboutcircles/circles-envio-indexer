@@ -16,6 +16,21 @@ contracts:
   handler: src/EventHandlers.ts
   events:
   - event: Transfer(address indexed from, address indexed to, uint256 amount)
+- name: HubV2
+  handler: src/EventHandlersV2.ts
+  events:
+  - event: RegisterHuman(address indexed avatar)
+  - event: InviteHuman(address indexed inviter, address indexed invited)
+  - event: RegisterOrganization(address indexed organization, string name)
+  - event: RegisterGroup(address indexed group, address indexed mint, address indexed treasury, string name, string symbol)
+  - event: Trust(address indexed truster, address indexed trustee, uint256 expiryTime)
+  - event: Stopped(address indexed avatar)
+  - event: StreamCompleted(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] amounts)
+  - event: ApprovalForAll(address indexed account, address indexed operator, bool approved)
+  - event: PersonalMint(address indexed human, uint256 amount, uint256 period, uint256 endPeriod)
+  - event: TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)
+  - event: TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values)
+  - event: URI(string value, uint256 indexed id)
 
 networks:
 # - id: 100
@@ -32,4 +47,7 @@ networks:
     address:
     - 0xdbF22D4e8962Db3b2F1d9Ff55be728A887e47710
   - name: PersonalCRC
+  - name: HubV2
+    address:
+    - 0xEddc960D3c78692BF38577054cb0a35114AE35e0
 rollback_on_reorg: false
