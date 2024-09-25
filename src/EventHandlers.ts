@@ -277,44 +277,12 @@ const updateAvatarBalance = async (
   }
 };
 
-function isHubV2_TransferSingle_eventArgs(
-  obj: any
-): obj is HubV2_TransferSingle_eventArgs {
-  return (
-    typeof obj === "object" &&
-    obj !== null &&
-    typeof obj.operator === "string" &&
-    typeof obj.from === "string" &&
-    typeof obj.to === "string" &&
-    typeof obj.id === "bigint" &&
-    typeof obj.value === "bigint"
-  );
-}
-
-function isHubV2_TransferBatch_eventArgs(
-  obj: any
-): obj is HubV2_TransferBatch_eventArgs {
-  return (
-    typeof obj === "object" &&
-    obj !== null &&
-    typeof obj.operator === "string" &&
-    typeof obj.from === "string" &&
-    typeof obj.to === "string" &&
-    Array.isArray(obj.ids) &&
-    Array.isArray(obj.values)
-  );
-}
-
-function isWrapperERC20Personal_Transfer_eventArgs(
-  transferType: TransferType_t,
-  obj: any
-): obj is WrapperERC20Personal_Transfer_eventArgs {
-  return transferType === "Erc20WrapperTransfer";
-}
-
 const handleTransfer = async ({
   event,
   context,
+  operator,
+  values,
+  tokens,
   transferType,
   version,
 }: {
@@ -326,26 +294,13 @@ const handleTransfer = async ({
     | WrapperERC20Personal_Transfer_eventArgs
   >;
   context: handlerContext;
+  operator: string | undefined;
+  values: bigint[];
+  tokens: string[];
   transferType: TransferType_t;
   version: number;
 }) => {
-  let values = [0n];
-  let tokens = [];
-  let isWrapped = false;
-  if (isHubV2_TransferSingle_eventArgs(event.params)) {
-    values = [event.params.value];
-    tokens = [event.params.id.toString()];
-  } else if (isHubV2_TransferBatch_eventArgs(event.params)) {
-    values = event.params.values;
-    tokens = event.params.ids.map((id) => id.toString());
-  } else if (isWrapperERC20Personal_Transfer_eventArgs(transferType, event.params)) {
-    values = [event.params.value];
-    tokens = [event.srcAddress];
-    isWrapped = true;
-  } else {
-    values = [event.params.amount];
-    tokens = [event.srcAddress];
-  }
+  let isWrapped = transferType === "Erc20WrapperTransfer";
 
   for (let i = 0; i < tokens.length; i++) {
     const transferEntity: Transfer = {
@@ -354,13 +309,13 @@ const handleTransfer = async ({
       timestamp: event.block.timestamp,
       transactionIndex: event.transaction.transactionIndex,
       logIndex: event.logIndex,
-      version,
       from: event.params.from,
       to: event.params.to,
-      operator: undefined,
+      operator,
       value: values[i],
-      transferType,
       token: tokens[i],
+      transferType,
+      version,
     };
     context.Transfer.set(transferEntity);
 
@@ -387,11 +342,27 @@ const handleTransfer = async ({
 };
 
 PersonalCRC.Transfer.handler(async ({ event, context }) =>
-  handleTransfer({ event, context, transferType: "Transfer", version: 1 })
+  handleTransfer({
+    event,
+    context,
+    operator: undefined,
+    values: [event.params.amount],
+    tokens: [event.srcAddress],
+    transferType: "Transfer",
+    version: 1,
+  })
 );
 
 Hub.HubTransfer.handler(async ({ event, context }) =>
-  handleTransfer({ event, context, transferType: "HubTransfer", version: 1 })
+  handleTransfer({
+    event,
+    context,
+    operator: undefined,
+    values: [event.params.amount],
+    tokens: [event.srcAddress],
+    transferType: "HubTransfer",
+    version: 1,
+  })
 );
 
 HubV2.StreamCompleted.handler(async ({ event, context }) => {
@@ -399,15 +370,39 @@ HubV2.StreamCompleted.handler(async ({ event, context }) => {
 });
 
 HubV2.TransferSingle.handler(async ({ event, context }) =>
-  handleTransfer({ event, context, transferType: "TransferSingle", version: 2 })
+  handleTransfer({
+    event,
+    context,
+    operator: event.params.operator,
+    values: [event.params.value],
+    tokens: [event.params.id.toString()],
+    transferType: "TransferSingle",
+    version: 2,
+  })
 );
 
 HubV2.TransferBatch.handler(async ({ event, context }) =>
-  handleTransfer({ event, context, transferType: "TransferBatch", version: 2 })
+  handleTransfer({
+    event,
+    context,
+    operator: event.params.operator,
+    values: event.params.values,
+    tokens: event.params.ids.map((id) => id.toString()),
+    transferType: "TransferSingle",
+    version: 2,
+  })
 );
 
 WrapperERC20Personal.Transfer.handler(async ({ event, context }) =>
-  handleTransfer({ event, context, transferType: "Erc20WrapperTransfer", version: 2 })
+  handleTransfer({
+    event,
+    context,
+    operator: undefined,
+    values: [event.params.value],
+    tokens: [event.srcAddress],
+    transferType: "Erc20WrapperTransfer",
+    version: 2,
+  })
 );
 
 WrapperERC20Personal.DepositDemurraged.handler(async ({ event, context }) => {
