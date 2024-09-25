@@ -3,18 +3,10 @@ import {
   handlerContext,
   Hub,
   Hub_HubTransfer_eventArgs,
-  // OrganizationV1,
-  // AvatarV1,
-  // TransferV1,
-  // TrustV1,
   PersonalCRC,
   PersonalCRC_Transfer_eventArgs,
-  // Avatar,
   ERC20Lift,
-  // Group,
   HubV2,
-  // Organization,
-  // Trust,
   WrapperERC20Personal,
   Avatar,
   TrustRelation,
@@ -366,7 +358,7 @@ Hub.HubTransfer.handler(async ({ event, context }) =>
 );
 
 HubV2.StreamCompleted.handler(async ({ event, context }) => {
-  // TODO: Implement handler here
+  // TODO: Implement handler here (waiting for pathfinder v2)
 });
 
 HubV2.TransferSingle.handler(async ({ event, context }) =>
@@ -406,11 +398,25 @@ WrapperERC20Personal.Transfer.handler(async ({ event, context }) =>
 );
 
 WrapperERC20Personal.DepositDemurraged.handler(async ({ event, context }) => {
-  // TODO: Implement handler here
+  updateAvatarBalance(
+    context,
+    event.params.account,
+    event.srcAddress,
+    event.params.amount,
+    2,
+    true
+  );
 });
 
 WrapperERC20Personal.WithdrawDemurraged.handler(async ({ event, context }) => {
-  // TODO: Implement handler here
+  updateAvatarBalance(
+    context,
+    event.params.account,
+    event.srcAddress,
+    -event.params.amount,
+    2,
+    true
+  );
 });
 
 WrapperERC20Personal.DepositInflationary.handler(async ({ event, context }) => {
