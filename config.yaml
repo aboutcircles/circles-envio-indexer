@@ -31,6 +31,20 @@ contracts:
   - event: TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)
   - event: TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values)
   - event: URI(string value, uint256 indexed id)
+- name: ERC20Lift
+  handler: src/EventHandlersV2.ts
+  events:
+  - event: ProxyCreation(address proxy, address masterCopy)
+  - event: ERC20WrapperDeployed(address indexed avatar, address indexed erc20Wrapper, uint8 circlesType)
+- name: WrapperERC20Personal
+  handler: src/EventHandlersV2.ts
+  events:
+  - event: Transfer(address indexed from, address indexed to, uint256 value)
+  - event: DepositDemurraged(address indexed account, uint256 amount, uint256 inflationaryAmount)
+  - event: WithdrawDemurraged(address indexed account, uint256 amount, uint256 inflationaryAmount)
+  - event: DepositInflationary(address indexed account, uint256 amount, uint256 demurragedAmount)
+  - event: WithdrawInflationary(address indexed account, uint256 amount, uint256 demurragedAmount)
+
 
 networks:
 # - id: 100
@@ -49,5 +63,8 @@ networks:
   - name: PersonalCRC
   - name: HubV2
     address:
-    - 0xEddc960D3c78692BF38577054cb0a35114AE35e0
+    - 0xb80feeDfEce647dDc709777D5094fACD157BA001
+  - name: ERC20Lift
+    address:
+    - 0xBD2D6Fbb6A702B04B750Bc9942fBaAE81187355E
 rollback_on_reorg: false

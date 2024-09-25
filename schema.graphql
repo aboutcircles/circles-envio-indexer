@@ -41,10 +41,19 @@ type Circles {
   avatar: Avatar!
 }
 
+type WrappedCircles {
+  # id is: tokenAddress-useAddress
+  id: ID!
+  balance: BigInt!
+  avatar: Avatar!
+}
+
 type Avatar {
   id: ID!
   stopped: Boolean!
   circles: [Circles!]! @derivedFrom(field: "avatar")
+  wrappedCircles: [WrappedCircles!]! @derivedFrom(field: "avatar")
+  trusts: [Trust!]! @derivedFrom(field: "truster")
   lastMint: BigInt!
   inviter: String
   organization: Organization
@@ -67,7 +76,10 @@ type Group {
 type Trust {
   # truster-trustee
   id: ID!
+  truster: Avatar!
+  trustee: Avatar!
   expiry: BigInt!
+  isMutual: Boolean!
 }
 
 type GlobalStats {
