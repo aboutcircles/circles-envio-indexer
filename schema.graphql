@@ -1,87 +1,3 @@
-type TransferV1 {
-  id: ID!
-  from: String!
-  to: String!
-  amount: BigInt!
-}
-
-type OrganizationV1 {
-  id: ID!
-}
-
-type AvatarV1 {
-  id: ID!
-  token: String
-  organization: OrganizationV1
-}
-
-type TrustV1 {
-  id: ID!
-  limit: BigInt!
-}
-
-type CirclesV1 {
-  id: ID!
-  balance: BigInt!
-}
-
-type GlobalStatsV1 {
-  id: ID!
-  signups: BigInt!
-  transfers: BigInt!
-  trusts: BigInt!
-}
-
-# v2 schema
-
-type Circles {
-  # id is: id + address
-  id: ID!
-  balance: BigInt!
-  avatar: Avatar!
-}
-
-type WrappedCircles {
-  # id is: tokenAddress-useAddress
-  id: ID!
-  balance: BigInt!
-  avatar: Avatar!
-}
-
-type Avatar {
-  id: ID!
-  stopped: Boolean!
-  circles: [Circles!]! @derivedFrom(field: "avatar")
-  wrappedCircles: [WrappedCircles!]! @derivedFrom(field: "avatar")
-  trusts: [Trust!]! @derivedFrom(field: "truster")
-  lastMint: BigInt!
-  inviter: String
-  organization: Organization
-  group: Group
-}
-
-type Organization {
-  id: ID!
-  name: String!
-}
-
-type Group {
-  id: ID!
-  mint: String!
-  treasury: String!
-  name: String!
-  symbol: String!
-}
-
-type Trust {
-  # truster-trustee
-  id: ID!
-  truster: Avatar!
-  trustee: Avatar!
-  expiry: BigInt!
-  isMutual: Boolean!
-}
-
 type GlobalStats {
   id: ID!
   signups: BigInt!
@@ -107,11 +23,11 @@ type Transfer {
   timestamp: Int!
   transactionIndex: Int!
   logIndex: Int!
-  batchIndex: Int!
+  # batchIndex: Int!
   # v1 or v2
   version: Int!
   # only for v2
-  operator: String!
+  operator: String
   from: String!
   to: String!
   value: BigInt!
@@ -122,7 +38,7 @@ type Transfer {
 }
 
 type TrustRelation {
-  # transaction hash
+  # is is truster-trustee-version
   id: ID!
   blockNumber: Int!
   timestamp: Int!
@@ -134,7 +50,8 @@ type TrustRelation {
   # v2 only or always UInt256.MAX in case of v1
   expiryTime: BigInt!
   # v1 only or always '100' in case of v2
-  limit: Int!
+  limit: BigInt!
+  isMutual: Boolean!
 }
 
 enum AvatarType {
@@ -146,7 +63,18 @@ enum AvatarType {
   RegisterOrganization
 }
 
-type Avatars {
+type AvatarBalance {
+  # id is avatar-token
+  id: ID!
+  # token address in v1 and token id in v2
+  token: Token!
+  avatar: Avatar!
+  balance: BigInt!
+  version: Int!
+  isWrapped: Boolean!
+}
+
+type Avatar {
   # the avatar address
   id: ID!
   blockNumber: Int!
@@ -165,6 +93,10 @@ type Avatars {
   name: String
   # IPFS CID of the avatar's profile
   cidV0Digest: String
+  # balances of all tokens
+  balances: [AvatarBalance!]! @derivedFrom(field: "avatar")
+  # balance of all tokens aggregated
+  balance: BigInt!
 }
 
 enum TokenType {
@@ -174,7 +106,7 @@ enum TokenType {
 }
 
 type Token {
-  # token address
+  # token address in v1 and token id in v2
   id: ID!
   blockNumber: Int!
   timestamp: Int!

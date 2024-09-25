@@ -5,8 +5,8 @@ import {
   Hub_HubTransfer_eventArgs,
   // OrganizationV1,
   // AvatarV1,
-  TransferV1,
-  TrustV1,
+  // TransferV1,
+  // TrustV1,
   PersonalCRC,
   PersonalCRC_Transfer_eventArgs,
   // Avatar,
@@ -14,12 +14,28 @@ import {
   // Group,
   HubV2,
   // Organization,
-  Trust,
+  // Trust,
   WrapperERC20Personal,
-  Avatars,
+  Avatar,
+  TrustRelation,
+  Transfer,
+  HubV2_TransferSingle_eventArgs,
+  HubV2_TransferBatch_eventArgs,
+  WrapperERC20Personal_Transfer_eventArgs,
 } from "generated";
-import { toBytes, bytesToBigInt, zeroAddress } from "viem";
+import {
+  toBytes,
+  bytesToBigInt,
+  zeroAddress,
+  maxUint256,
+  parseEther,
+} from "viem";
 import { incrementStats } from "./incrementStats";
+import { TransferType_t } from "generated/src/db/Enums.gen";
+
+function makeAvatarBalanceEntityId(avatarId: string, tokenId: string) {
+  return `${avatarId}-${tokenId}`;
+}
 
 // ###############
 // #### TOKEN ####
@@ -30,9 +46,9 @@ Hub.Signup.contractRegister(async ({ event, context }) => {
 });
 
 Hub.Signup.handler(async ({ event, context }) => {
-  const avatar = await context.Avatars.get(event.params.user);
+  const avatar = await context.Avatar.get(event.params.user);
   if (avatar) {
-    context.Avatars.set({
+    context.Avatar.set({
       ...avatar,
       tokenId: event.params.token,
     });
@@ -44,9 +60,9 @@ ERC20Lift.ProxyCreation.contractRegister(async ({ event, context }) => {
 });
 
 ERC20Lift.ERC20WrapperDeployed.handler(async ({ event, context }) => {
-  const avatar = await context.Avatars.get(event.params.avatar);
+  const avatar = await context.Avatar.get(event.params.avatar);
   if (avatar) {
-    context.Avatars.set({
+    context.Avatar.set({
       ...avatar,
       wrappedTokenId: event.params.erc20Wrapper,
     });
@@ -58,7 +74,7 @@ ERC20Lift.ERC20WrapperDeployed.handler(async ({ event, context }) => {
 // ###############
 
 Hub.OrganizationSignup.handler(async ({ event, context }) => {
-  const avatarEntity: Avatars = {
+  const avatarEntity: Avatar = {
     id: event.params.organization,
     avatarType: "OrganizationSignup",
     blockNumber: event.block.number,
@@ -71,15 +87,16 @@ Hub.OrganizationSignup.handler(async ({ event, context }) => {
     cidV0Digest: undefined,
     name: undefined,
     transactionIndex: event.transaction.transactionIndex,
-    wrappedTokenId: undefined
+    wrappedTokenId: undefined,
+    balance: 0n,
   };
 
-  context.Avatars.set(avatarEntity);
-  await incrementStats(context, 'signups');
+  context.Avatar.set(avatarEntity);
+  await incrementStats(context, "signups");
 });
 
 Hub.Signup.handler(async ({ event, context }) => {
-  const avatarEntity: Avatars = {
+  const avatarEntity: Avatar = {
     id: event.params.user,
     avatarType: "Signup",
     blockNumber: event.block.number,
@@ -92,15 +109,16 @@ Hub.Signup.handler(async ({ event, context }) => {
     cidV0Digest: undefined,
     name: undefined,
     transactionIndex: event.transaction.transactionIndex,
-    wrappedTokenId: undefined
+    wrappedTokenId: undefined,
+    balance: 0n,
   };
 
-  context.Avatars.set(avatarEntity);
-  await incrementStats(context, 'signups');
+  context.Avatar.set(avatarEntity);
+  await incrementStats(context, "signups");
 });
 
 HubV2.RegisterHuman.handler(async ({ event, context }) => {
-  const avatarEntity: Avatars = {
+  const avatarEntity: Avatar = {
     id: event.params.avatar,
     avatarType: "RegisterHuman",
     blockNumber: event.block.number,
@@ -113,15 +131,16 @@ HubV2.RegisterHuman.handler(async ({ event, context }) => {
     cidV0Digest: undefined,
     name: undefined,
     transactionIndex: event.transaction.transactionIndex,
-    wrappedTokenId: undefined
+    wrappedTokenId: undefined,
+    balance: 0n,
   };
 
-  context.Avatars.set(avatarEntity);
+  context.Avatar.set(avatarEntity);
   await incrementStats(context, "signups");
 });
 
 HubV2.InviteHuman.handler(async ({ event, context }) => {
-  const avatarEntity: Avatars = {
+  const avatarEntity: Avatar = {
     id: event.params.invited,
     avatarType: "InviteHuman",
     blockNumber: event.block.number,
@@ -134,15 +153,16 @@ HubV2.InviteHuman.handler(async ({ event, context }) => {
     cidV0Digest: undefined,
     name: undefined,
     transactionIndex: event.transaction.transactionIndex,
-    wrappedTokenId: undefined
+    wrappedTokenId: undefined,
+    balance: 0n,
   };
 
-  context.Avatars.set(avatarEntity);
+  context.Avatar.set(avatarEntity);
   await incrementStats(context, "signups");
 });
 
 HubV2.RegisterOrganization.handler(async ({ event, context }) => {
-  const avatarEntity: Avatars = {
+  const avatarEntity: Avatar = {
     id: event.params.organization,
     avatarType: "RegisterOrganization",
     blockNumber: event.block.number,
@@ -155,15 +175,16 @@ HubV2.RegisterOrganization.handler(async ({ event, context }) => {
     cidV0Digest: undefined,
     name: event.params.name,
     transactionIndex: event.transaction.transactionIndex,
-    wrappedTokenId: undefined
+    wrappedTokenId: undefined,
+    balance: 0n,
   };
 
-  context.Avatars.set(avatarEntity);
+  context.Avatar.set(avatarEntity);
   await incrementStats(context, "signups");
 });
 
 HubV2.RegisterGroup.handler(async ({ event, context }) => {
-  const avatarEntity: Avatars = {
+  const avatarEntity: Avatar = {
     id: event.params.group,
     avatarType: "RegisterGroup",
     blockNumber: event.block.number,
@@ -176,10 +197,11 @@ HubV2.RegisterGroup.handler(async ({ event, context }) => {
     cidV0Digest: undefined,
     name: event.params.name,
     transactionIndex: event.transaction.transactionIndex,
-    wrappedTokenId: undefined
+    wrappedTokenId: undefined,
+    balance: 0n,
   };
 
-  context.Avatars.set(avatarEntity);
+  context.Avatar.set(avatarEntity);
   await incrementStats(context, "signups");
 });
 
@@ -211,148 +233,182 @@ HubV2.URI.handler(async ({ event, context }) => {
   // TODO: Implement handler here
 });
 
-
 // ###############
 // ## TRANSFERS ##
 // ###############
 
+const updateAvatarBalance = async (
+  context: handlerContext,
+  avatarId: string,
+  tokenId: string,
+  amount: bigint,
+  version: number,
+  isWrapped: boolean
+) => {
+  if (avatarId === zeroAddress) {
+    return;
+  }
+  const balanceId = makeAvatarBalanceEntityId(avatarId, tokenId);
+  const [avatarBalance, avatar] = await Promise.all([
+    context.AvatarBalance.get(balanceId),
+    context.Avatar.get(avatarId),
+  ]);
+  if (avatarBalance) {
+    context.AvatarBalance.set({
+      ...avatarBalance,
+      balance: avatarBalance.balance + amount,
+    });
+  } else {
+    context.AvatarBalance.set({
+      id: balanceId,
+      avatar_id: avatarId,
+      token_id: tokenId,
+      balance: amount,
+      version,
+      isWrapped,
+    });
+  }
+
+  if (avatar) {
+    context.Avatar.set({
+      ...avatar,
+      balance: avatar.balance + amount,
+    });
+  }
+};
+
+function isHubV2_TransferSingle_eventArgs(
+  obj: any
+): obj is HubV2_TransferSingle_eventArgs {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    typeof obj.operator === "string" &&
+    typeof obj.from === "string" &&
+    typeof obj.to === "string" &&
+    typeof obj.id === "bigint" &&
+    typeof obj.value === "bigint"
+  );
+}
+
+function isHubV2_TransferBatch_eventArgs(
+  obj: any
+): obj is HubV2_TransferBatch_eventArgs {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    typeof obj.operator === "string" &&
+    typeof obj.from === "string" &&
+    typeof obj.to === "string" &&
+    Array.isArray(obj.ids) &&
+    Array.isArray(obj.values)
+  );
+}
+
+function isWrapperERC20Personal_Transfer_eventArgs(
+  transferType: TransferType_t,
+  obj: any
+): obj is WrapperERC20Personal_Transfer_eventArgs {
+  return transferType === "Erc20WrapperTransfer";
+}
+
 const handleTransfer = async ({
   event,
   context,
+  transferType,
+  version,
 }: {
-  event: eventLog<Hub_HubTransfer_eventArgs | PersonalCRC_Transfer_eventArgs>;
+  event: eventLog<
+    | Hub_HubTransfer_eventArgs
+    | PersonalCRC_Transfer_eventArgs
+    | HubV2_TransferSingle_eventArgs
+    | HubV2_TransferBatch_eventArgs
+    | WrapperERC20Personal_Transfer_eventArgs
+  >;
   context: handlerContext;
+  transferType: TransferType_t;
+  version: number;
 }) => {
-  const entity: TransferV1 = {
-    id: event.transaction.hash,
-    from: event.params.from,
-    to: event.params.to,
-    amount: event.params.amount,
-  };
-
-  context.TransferV1.set(entity);
-
-  const personalCRC = await context.CirclesV1.get(event.params.to);
-  let newBalance = event.params.amount;
-  if (personalCRC) {
-    newBalance += personalCRC.balance;
+  let values = [0n];
+  let tokens = [];
+  let isWrapped = false;
+  if (isHubV2_TransferSingle_eventArgs(event.params)) {
+    values = [event.params.value];
+    tokens = [event.params.id.toString()];
+  } else if (isHubV2_TransferBatch_eventArgs(event.params)) {
+    values = event.params.values;
+    tokens = event.params.ids.map((id) => id.toString());
+  } else if (isWrapperERC20Personal_Transfer_eventArgs(transferType, event.params)) {
+    values = [event.params.value];
+    tokens = [event.srcAddress];
+    isWrapped = true;
+  } else {
+    values = [event.params.amount];
+    tokens = [event.srcAddress];
   }
-  context.CirclesV1.set({
-    id: event.params.to,
-    balance: newBalance,
-  });
-  if (event.params.from !== zeroAddress) {
-    const personalCRC = await context.CirclesV1.get(event.params.from);
-    let newBalance = event.params.amount;
-    if (personalCRC) {
-      newBalance = personalCRC.balance - newBalance;
-    }
-    context.CirclesV1.set({
-      id: event.params.from,
-      balance: newBalance,
-    });
+
+  for (let i = 0; i < tokens.length; i++) {
+    const transferEntity: Transfer = {
+      id: event.transaction.hash,
+      blockNumber: event.block.number,
+      timestamp: event.block.timestamp,
+      transactionIndex: event.transaction.transactionIndex,
+      logIndex: event.logIndex,
+      version,
+      from: event.params.from,
+      to: event.params.to,
+      operator: undefined,
+      value: values[i],
+      transferType,
+      token: tokens[i],
+    };
+    context.Transfer.set(transferEntity);
+
+    Promise.all([
+      updateAvatarBalance(
+        context,
+        event.params.to,
+        tokens[i],
+        values[i],
+        version,
+        isWrapped
+      ),
+      updateAvatarBalance(
+        context,
+        event.params.from,
+        tokens[i],
+        -values[i],
+        version,
+        isWrapped
+      ),
+      incrementStats(context, "transfers"),
+    ]);
   }
-  await incrementStats(context, 'transfers');
 };
 
-PersonalCRC.Transfer.handler(handleTransfer);
+PersonalCRC.Transfer.handler(async ({ event, context }) =>
+  handleTransfer({ event, context, transferType: "Transfer", version: 1 })
+);
 
-Hub.HubTransfer.handler(handleTransfer);
+Hub.HubTransfer.handler(async ({ event, context }) =>
+  handleTransfer({ event, context, transferType: "HubTransfer", version: 1 })
+);
 
 HubV2.StreamCompleted.handler(async ({ event, context }) => {
   // TODO: Implement handler here
 });
 
-async function handleTransferV2(
-  context: handlerContext,
-  id: bigint,
-  to: string,
-  value: bigint
-) {
-  const circlesId = `${id}-${to}`;
-  let circles = await context.Circles.get(circlesId);
-  if (!circles) {
-    circles = {
-      id: circlesId,
-      avatar_id: to,
-      balance: value,
-    };
-  } else {
-    circles = {
-      ...circles,
-      balance: circles.balance + value,
-    };
-  }
-  context.Circles.set(circles);
-}
+HubV2.TransferSingle.handler(async ({ event, context }) =>
+  handleTransfer({ event, context, transferType: "TransferSingle", version: 2 })
+);
 
-HubV2.TransferSingle.handler(async ({ event, context }) => {
-  const avatar = await context.Avatar.get(event.params.to);
-  if (avatar !== undefined) {
-    handleTransferV2(
-      context,
-      event.params.id,
-      event.params.to,
-      event.params.value
-    );
-  }
-});
+HubV2.TransferBatch.handler(async ({ event, context }) =>
+  handleTransfer({ event, context, transferType: "TransferBatch", version: 2 })
+);
 
-HubV2.TransferBatch.handler(async ({ event, context }) => {
-  const avatar = await context.Avatar.get(event.params.to);
-  if (avatar) {
-    if (event.params.ids.length !== event.params.values.length) {
-      throw new Error("ids and values must have the same length");
-    }
-    for (let i = 0; i < event.params.ids.length; i++) {
-      handleTransferV2(
-        context,
-        event.params.ids[i],
-        event.params.to,
-        event.params.values[i]
-      );
-    }
-  }
-});
-
-async function updateWrappedCirclesBalance(
-  context: handlerContext,
-  tokenAddress: string,
-  userAddress: string,
-  value: bigint
-) {
-  const circlesId = `${tokenAddress}-${userAddress}`;
-  let circles = await context.WrappedCircles.get(circlesId);
-  if (!circles) {
-    circles = {
-      id: circlesId,
-      avatar_id: userAddress,
-      balance: value,
-    };
-  }
-  context.WrappedCircles.set({
-    ...circles,
-    balance: circles.balance + value,
-  });
-}
-
-WrapperERC20Personal.Transfer.handler(async ({ event, context }) => {
-  if (event.params.from !== zeroAddress) {
-    await updateWrappedCirclesBalance(
-      context,
-      event.srcAddress,
-      event.params.from,
-      -event.params.value
-    );
-  }
-
-  await updateWrappedCirclesBalance(
-    context,
-    event.srcAddress,
-    event.params.to,
-    event.params.value
-  );
-});
+WrapperERC20Personal.Transfer.handler(async ({ event, context }) =>
+  handleTransfer({ event, context, transferType: "Erc20WrapperTransfer", version: 2 })
+);
 
 WrapperERC20Personal.DepositDemurraged.handler(async ({ event, context }) => {
   // TODO: Implement handler here
@@ -366,33 +422,70 @@ WrapperERC20Personal.DepositInflationary.handler(async ({ event, context }) => {
   // TODO: Implement handler here
 });
 
-WrapperERC20Personal.WithdrawInflationary.handler(async ({ event, context }) => {
-  // TODO: Implement handler here
-});
+WrapperERC20Personal.WithdrawInflationary.handler(
+  async ({ event, context }) => {
+    // TODO: Implement handler here
+  }
+);
 
 // ###############
 // #### TRUST ####
 // ###############
 
 Hub.Trust.handler(async ({ event, context }) => {
-  const entity: TrustV1 = {
+  const oppositeTrustRelation = await context.TrustRelation.get(
+    `${event.params.canSendTo}${event.params.user}`
+  );
+  const isMutual = oppositeTrustRelation !== undefined;
+  if (isMutual) {
+    context.TrustRelation.set({
+      ...oppositeTrustRelation,
+      isMutual: true,
+    });
+  }
+  const entity: TrustRelation = {
     id: `${event.params.user}${event.params.canSendTo}`,
+    blockNumber: event.block.number,
+    timestamp: event.block.timestamp,
+    transactionIndex: event.transaction.transactionIndex,
+    logIndex: event.logIndex,
+    version: 1,
+    trustee: event.params.canSendTo,
+    truster: event.params.user,
+    expiryTime: maxUint256,
     limit: event.params.limit,
+    isMutual,
   };
 
-  context.TrustV1.set(entity);
-  await incrementStats(context, 'trusts');
+  context.TrustRelation.set(entity);
+  await incrementStats(context, "trusts");
 });
 
 HubV2.Trust.handler(async ({ event, context }) => {
-  const entity: Trust = {
-    id: `${event.params.truster}-${event.params.trustee}`,
-    trustee_id: event.params.trustee,
-    truster_id: event.params.truster,
-    isMutual: false,
-    expiry: event.params.expiryTime,
+  const oppositeTrustRelation = await context.TrustRelation.get(
+    `${event.params.trustee}${event.params.truster}`
+  );
+  const isMutual = oppositeTrustRelation !== undefined;
+  if (isMutual) {
+    context.TrustRelation.set({
+      ...oppositeTrustRelation,
+      isMutual: true,
+    });
+  }
+  const entity: TrustRelation = {
+    id: `${event.params.truster}${event.params.trustee}`,
+    blockNumber: event.block.number,
+    timestamp: event.block.timestamp,
+    transactionIndex: event.transaction.transactionIndex,
+    logIndex: event.logIndex,
+    version: 1,
+    trustee: event.params.trustee,
+    truster: event.params.truster,
+    expiryTime: event.params.expiryTime,
+    limit: parseEther("100"),
+    isMutual,
   };
 
-  context.Trust.set(entity);
+  context.TrustRelation.set(entity);
   await incrementStats(context, "trusts");
 });
