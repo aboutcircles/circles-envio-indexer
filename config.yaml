@@ -3,6 +3,7 @@ name: circles-indexer
 field_selection:
   transaction_fields:
     - hash
+    - transactionIndex
 contracts:
 - name: Hub
   handler: src/EventHandlers.ts
@@ -17,7 +18,7 @@ contracts:
   events:
   - event: Transfer(address indexed from, address indexed to, uint256 amount)
 - name: HubV2
-  handler: src/EventHandlersV2.ts
+  handler: src/EventHandlers.ts
   events:
   - event: RegisterHuman(address indexed avatar)
   - event: InviteHuman(address indexed inviter, address indexed invited)
@@ -32,12 +33,12 @@ contracts:
   - event: TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values)
   - event: URI(string value, uint256 indexed id)
 - name: ERC20Lift
-  handler: src/EventHandlersV2.ts
+  handler: src/EventHandlers.ts
   events:
   - event: ProxyCreation(address proxy, address masterCopy)
   - event: ERC20WrapperDeployed(address indexed avatar, address indexed erc20Wrapper, uint8 circlesType)
 - name: WrapperERC20Personal
-  handler: src/EventHandlersV2.ts
+  handler: src/EventHandlers.ts
   events:
   - event: Transfer(address indexed from, address indexed to, uint256 value)
   - event: DepositDemurraged(address indexed account, uint256 amount, uint256 inflationaryAmount)

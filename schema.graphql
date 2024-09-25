@@ -88,3 +88,100 @@ type GlobalStats {
   transfers: BigInt!
   trusts: BigInt!
 }
+
+# new schema
+
+enum TransferType {
+  Erc20WrapperTransfer
+  TransferSingle
+  TransferBatch
+  StreamCompleted
+  HubTransfer
+  Transfer
+}
+
+type Transfer {
+  # transaction hash
+  id: ID!
+  blockNumber: Int!
+  timestamp: Int!
+  transactionIndex: Int!
+  logIndex: Int!
+  batchIndex: Int!
+  # v1 or v2
+  version: Int!
+  # only for v2
+  operator: String!
+  from: String!
+  to: String!
+  value: BigInt!
+  # transaction type; either: Erc20WrapperTransfer | TransferSingle | TransferBatch | StreamCompleted | HubTransfer | Transfer
+  transferType: TransferType!
+  # is either the v2 token-id or the v1 token address; both in address format
+  token: String!
+}
+
+type TrustRelation {
+  # transaction hash
+  id: ID!
+  blockNumber: Int!
+  timestamp: Int!
+  transactionIndex: Int!
+  logIndex: Int!
+  version: Int!
+  trustee: String!
+  truster: String!
+  # v2 only or always UInt256.MAX in case of v1
+  expiryTime: BigInt!
+  # v1 only or always '100' in case of v2
+  limit: Int!
+}
+
+enum AvatarType {
+  Signup
+  OrganizationSignup
+  RegisterHuman
+  InviteHuman
+  RegisterGroup
+  RegisterOrganization
+}
+
+type Avatars {
+  # the avatar address
+  id: ID!
+  blockNumber: Int!
+  timestamp: Int!
+  transactionIndex: Int!
+  logIndex: Int!
+  transactionHash: String!
+  version: Int!
+  avatarType: AvatarType!
+  invitedBy: String
+  # v1 token address or equal to avatar address if v2
+  tokenId: String
+  # v2 wrapped token id
+  wrappedTokenId: String
+  # groups only
+  name: String
+  # IPFS CID of the avatar's profile
+  cidV0Digest: String
+}
+
+enum TokenType {
+  RegisterGroup
+  RegisterHuman
+  Signup
+}
+
+type Token {
+  # token address
+  id: ID!
+  blockNumber: Int!
+  timestamp: Int!
+  transactionIndex: Int!
+  logIndex: Int!
+  transactionHash: String!
+  version: Int!
+  tokenType: TokenType!
+  tokenOwner: String!
+}
