@@ -38,8 +38,8 @@ Hub.Signup.contractRegister(async ({ event, context }) => {
   context.addPersonalCRC(event.params.token);
 });
 
-ERC20Lift.ProxyCreation.contractRegister(async ({ event, context }) => {
-  context.addWrapperERC20Personal(event.params.proxy);
+ERC20Lift.ERC20WrapperDeployed.contractRegister(async ({ event, context }) => {
+  context.addWrapperERC20Personal(event.params.erc20Wrapper);
 });
 
 ERC20Lift.ERC20WrapperDeployed.handler(async ({ event, context }) => {
@@ -50,6 +50,17 @@ ERC20Lift.ERC20WrapperDeployed.handler(async ({ event, context }) => {
       wrappedTokenId: event.params.erc20Wrapper,
     });
   }
+  context.Token.set({
+    id: event.params.erc20Wrapper,
+    blockNumber: event.block.number,
+    timestamp: event.block.timestamp,
+    transactionIndex: event.transaction.transactionIndex,
+    logIndex: event.logIndex,
+    transactionHash: event.transaction.hash,
+    version: 2,
+    tokenType: "RegisterHuman",
+    tokenOwner: event.params.avatar,
+  });
 });
 
 // ###############
@@ -72,7 +83,7 @@ Hub.OrganizationSignup.handler(async ({ event, context }) => {
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
     balance: 0n,
-    lastMint: 0n
+    lastMint: 0n,
   };
 
   context.Avatar.set(avatarEntity);
@@ -80,7 +91,10 @@ Hub.OrganizationSignup.handler(async ({ event, context }) => {
 });
 
 Hub.Signup.handler(async ({ event, context }) => {
-  const balanceId = makeAvatarBalanceEntityId(event.params.user, event.params.token);
+  const balanceId = makeAvatarBalanceEntityId(
+    event.params.user,
+    event.params.token
+  );
   const avatarBalance = await context.AvatarBalance.get(balanceId);
 
   const avatarEntity: Avatar = {
@@ -98,7 +112,7 @@ Hub.Signup.handler(async ({ event, context }) => {
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
     balance: avatarBalance?.balance || 0n,
-    lastMint: 0n
+    lastMint: 0n,
   };
 
   context.Avatar.set(avatarEntity);
@@ -145,9 +159,9 @@ HubV2.RegisterHuman.handler(async ({ event, context }) => {
       transactionIndex: event.transaction.transactionIndex,
       wrappedTokenId: undefined,
       balance: 0n,
-      lastMint: 0n
+      lastMint: 0n,
     };
-  
+
     context.Avatar.set(avatarEntity);
     await incrementStats(context, "signups");
   }
@@ -169,7 +183,7 @@ HubV2.InviteHuman.handler(async ({ event, context }) => {
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
     balance: 0n,
-    lastMint: 0n
+    lastMint: 0n,
   };
 
   context.Avatar.set(avatarEntity);
@@ -192,7 +206,7 @@ HubV2.RegisterOrganization.handler(async ({ event, context }) => {
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
     balance: 0n,
-    lastMint: 0n
+    lastMint: 0n,
   };
 
   context.Avatar.set(avatarEntity);
@@ -215,7 +229,7 @@ HubV2.RegisterGroup.handler(async ({ event, context }) => {
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
     balance: 0n,
-    lastMint: 0n
+    lastMint: 0n,
   };
 
   context.Avatar.set(avatarEntity);
@@ -319,7 +333,6 @@ const handleTransfer = async ({
   let isWrapped = transferType === "Erc20WrapperTransfer";
 
   for (let i = 0; i < tokens.length; i++) {
-
     const token = await context.Token.get(tokens[i]);
     if (!token) {
       context.Token.set({
@@ -353,105 +366,101 @@ const handleTransfer = async ({
     };
     context.Transfer.set(transferEntity);
 
-    Promise.all([
-      updateAvatarBalance(
-        context,
-        event.params.to,
-        tokens[i],
-        values[i],
-        version,
-        isWrapped
-      ),
-      updateAvatarBalance(
-        context,
-        event.params.from,
-        tokens[i],
-        -values[i],
-        version,
-        isWrapped
-      ),
-      incrementStats(context, "transfers"),
-    ]);
+    await updateAvatarBalance(
+      context,
+      event.params.to,
+      tokens[i],
+      values[i],
+      version,
+      isWrapped
+    );
+    await updateAvatarBalance(
+      context,
+      event.params.from,
+      tokens[i],
+      -values[i],
+      version,
+      isWrapped
+    );
+    await incrementStats(context, "transfers");
   }
 };
 
-PersonalCRC.Transfer.handler(async ({ event, context }) =>
-  handleTransfer({
-    event,
-    context,
-    operator: undefined,
-    values: [event.params.amount],
-    tokens: [event.srcAddress],
-    transferType: "Transfer",
-    version: 1,
-  })
+PersonalCRC.Transfer.handler(
+  async ({ event, context }) =>
+    await handleTransfer({
+      event,
+      context,
+      operator: undefined,
+      values: [event.params.amount],
+      tokens: [event.srcAddress],
+      transferType: "Transfer",
+      version: 1,
+    })
 );
 
-Hub.HubTransfer.handler(async ({ event, context }) =>
-  handleTransfer({
-    event,
-    context,
-    operator: undefined,
-    values: [event.params.amount],
-    tokens: [event.srcAddress],
-    transferType: "HubTransfer",
-    version: 1,
-  })
+Hub.HubTransfer.handler(
+  async ({ event, context }) =>
+    await handleTransfer({
+      event,
+      context,
+      operator: undefined,
+      values: [event.params.amount],
+      tokens: [event.srcAddress],
+      transferType: "HubTransfer",
+      version: 1,
+    })
 );
 
 HubV2.StreamCompleted.handler(async ({ event, context }) => {
   // TODO: Implement handler here (waiting for pathfinder v2)
 });
 
-HubV2.TransferSingle.handler(async ({ event, context }) =>
-  handleTransfer({
-    event,
-    context,
-    operator: event.params.operator,
-    values: [event.params.value],
-    tokens: [event.params.id.toString()],
-    transferType: "TransferSingle",
-    version: 2,
-  })
+HubV2.TransferSingle.handler(
+  async ({ event, context }) =>
+    await handleTransfer({
+      event,
+      context,
+      operator: event.params.operator,
+      values: [event.params.value],
+      tokens: [event.params.id.toString()],
+      transferType: "TransferSingle",
+      version: 2,
+    })
 );
 
-HubV2.TransferBatch.handler(async ({ event, context }) =>
-  handleTransfer({
-    event,
-    context,
-    operator: event.params.operator,
-    values: event.params.values,
-    tokens: event.params.ids.map((id) => id.toString()),
-    transferType: "TransferSingle",
-    version: 2,
-  })
+HubV2.TransferBatch.handler(
+  async ({ event, context }) =>
+    await handleTransfer({
+      event,
+      context,
+      operator: event.params.operator,
+      values: event.params.values,
+      tokens: event.params.ids.map((id) => id.toString()),
+      transferType: "TransferSingle",
+      version: 2,
+    })
 );
 
-WrapperERC20Personal.Transfer.handler(async ({ event, context }) =>
-  handleTransfer({
-    event,
-    context,
-    operator: undefined,
-    values: [event.params.value],
-    tokens: [event.srcAddress],
-    transferType: "Erc20WrapperTransfer",
-    version: 2,
-  })
+WrapperERC20Personal.Transfer.handler(
+  async ({ event, context }) =>
+    await handleTransfer({
+      event,
+      context,
+      operator: undefined,
+      values: [event.params.value],
+      tokens: [event.srcAddress],
+      transferType: "Erc20WrapperTransfer",
+      version: 2,
+    })
 );
 
 WrapperERC20Personal.DepositDemurraged.handler(async ({ event, context }) => {
-  updateAvatarBalance(
-    context,
-    event.params.account,
-    event.srcAddress,
-    event.params.amount,
-    2,
-    true
-  );
+  // TODO: do we need this or Transfer instead?
 });
 
 WrapperERC20Personal.WithdrawDemurraged.handler(async ({ event, context }) => {
-  updateAvatarBalance(
+  await updateAvatarBalance(
     context,
     event.params.account,
     event.srcAddress,
@@ -476,9 +485,22 @@ WrapperERC20Personal.WithdrawInflationary.handler(
 // ###############
 
 Hub.Trust.handler(async ({ event, context }) => {
+  const trustId = `${event.params.user}${event.params.canSendTo}`;
+  const oppositeTrustId = `${event.params.canSendTo}${event.params.user}`;
   const oppositeTrustRelation = await context.TrustRelation.get(
-    `${event.params.canSendTo}${event.params.user}`
+    oppositeTrustId
   );
+  if (event.params.limit === 0n) {
+    // this is untrust
+    context.TrustRelation.deleteUnsafe(trustId);
+    if (oppositeTrustRelation) {
+      context.TrustRelation.set({
+        ...oppositeTrustRelation,
+        isMutual: false,
+      });
+    }
+    return;
+  }
   const isMutual = oppositeTrustRelation !== undefined;
   if (isMutual) {
     context.TrustRelation.set({
@@ -487,7 +509,7 @@ Hub.Trust.handler(async ({ event, context }) => {
     });
   }
   const entity: TrustRelation = {
-    id: `${event.params.user}${event.params.canSendTo}`,
+    id: trustId,
     blockNumber: event.block.number,
     timestamp: event.block.timestamp,
     transactionIndex: event.transaction.transactionIndex,
@@ -505,9 +527,24 @@ Hub.Trust.handler(async ({ event, context }) => {
 });
 
 HubV2.Trust.handler(async ({ event, context }) => {
+  const trustId = `${event.params.truster}${event.params.trustee}`;
+  const oppositeTrustId = `${event.params.trustee}${event.params.truster}`;
   const oppositeTrustRelation = await context.TrustRelation.get(
-    `${event.params.trustee}${event.params.truster}`
+    oppositeTrustId
   );
+  const timeDifference =
+    event.params.expiryTime - BigInt(event.block.timestamp);
+  if (timeDifference < 3600n) {
+    // this is untrust
+    context.TrustRelation.deleteUnsafe(trustId);
+    if (oppositeTrustRelation) {
+      context.TrustRelation.set({
+        ...oppositeTrustRelation,
+        isMutual: false,
+      });
+    }
+    return;
+  }
   const isMutual = oppositeTrustRelation !== undefined;
   if (isMutual) {
     context.TrustRelation.set({
@@ -516,12 +553,12 @@ HubV2.Trust.handler(async ({ event, context }) => {
     });
   }
   const entity: TrustRelation = {
-    id: `${event.params.truster}${event.params.trustee}`,
+    id: trustId,
     blockNumber: event.block.number,
     timestamp: event.block.timestamp,
     transactionIndex: event.transaction.transactionIndex,
     logIndex: event.logIndex,
-    version: 1,
+    version: 2,
     trustee: event.params.trustee,
     truster: event.params.truster,
     expiryTime: event.params.expiryTime,

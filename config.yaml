@@ -68,4 +68,5 @@ networks:
   - name: ERC20Lift
     address:
     - 0xBD2D6Fbb6A702B04B750Bc9942fBaAE81187355E
+  - name: WrapperERC20Personal
 rollback_on_reorg: true

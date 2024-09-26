@@ -1,6 +1,6 @@
-import { GlobalStats, handlerContext } from "generated";
+import { handlerContext } from "generated";
 
-export async function incrementStats(context: handlerContext, field: 'signups' | 'transfers' | 'trusts'): Promise<GlobalStats> {
+export async function incrementStats(context: handlerContext, field: 'signups' | 'transfers' | 'trusts'): Promise<void> {
     let stats = await context.GlobalStats.get('0');
   
     if(!stats) {
@@ -12,8 +12,8 @@ export async function incrementStats(context: handlerContext, field: 'signups' |
       };
     }
   
-    return {
+    context.GlobalStats.set({
       ...stats,
       [field]: stats[field] + 1n,
-    };
+    });
   }
