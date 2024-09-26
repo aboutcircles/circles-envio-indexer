@@ -37,16 +37,6 @@ Hub.Signup.contractRegister(async ({ event, context }) => {
   context.addPersonalCRC(event.params.token);
 });
 
-Hub.Signup.handler(async ({ event, context }) => {
-  const avatar = await context.Avatar.get(event.params.user);
-  if (avatar) {
-    context.Avatar.set({
-      ...avatar,
-      tokenId: event.params.token,
-    });
-  }
-});
-
 ERC20Lift.ProxyCreation.contractRegister(async ({ event, context }) => {
   context.addWrapperERC20Personal(event.params.proxy);
 });
@@ -97,7 +87,7 @@ Hub.Signup.handler(async ({ event, context }) => {
     invitedBy: undefined,
     version: 1,
     logIndex: event.logIndex,
-    tokenId: undefined,
+    tokenId: event.params.token,
     cidV0Digest: undefined,
     name: undefined,
     transactionIndex: event.transaction.transactionIndex,
