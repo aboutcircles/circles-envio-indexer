@@ -68,4 +68,4 @@ networks:
   - name: ERC20Lift
     address:
     - 0xBD2D6Fbb6A702B04B750Bc9942fBaAE81187355E
-rollback_on_reorg: false
+rollback_on_reorg: true

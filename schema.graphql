@@ -97,6 +97,7 @@ type Avatar {
   balances: [AvatarBalance!]! @derivedFrom(field: "avatar")
   # balance of all tokens aggregated
   balance: BigInt!
+  lastMint: BigInt!
 }
 
 enum TokenType {

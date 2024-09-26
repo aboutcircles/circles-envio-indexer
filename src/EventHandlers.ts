@@ -14,6 +14,7 @@ import {
   HubV2_TransferSingle_eventArgs,
   HubV2_TransferBatch_eventArgs,
   WrapperERC20Personal_Transfer_eventArgs,
+  Token,
 } from "generated";
 import {
   toBytes,
@@ -71,6 +72,7 @@ Hub.OrganizationSignup.handler(async ({ event, context }) => {
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
     balance: 0n,
+    lastMint: 0n
   };
 
   context.Avatar.set(avatarEntity);
@@ -78,6 +80,9 @@ Hub.OrganizationSignup.handler(async ({ event, context }) => {
 });
 
 Hub.Signup.handler(async ({ event, context }) => {
+  const balanceId = makeAvatarBalanceEntityId(event.params.user, event.params.token);
+  const avatarBalance = await context.AvatarBalance.get(balanceId);
+
   const avatarEntity: Avatar = {
     id: event.params.user,
     avatarType: "Signup",
@@ -92,33 +97,60 @@ Hub.Signup.handler(async ({ event, context }) => {
     name: undefined,
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
-    balance: 0n,
+    balance: avatarBalance?.balance || 0n,
+    lastMint: 0n
   };
 
   context.Avatar.set(avatarEntity);
+
+  const tokenEntity: Token = {
+    id: event.params.token,
+    blockNumber: event.block.number,
+    timestamp: event.block.timestamp,
+    transactionIndex: event.transaction.transactionIndex,
+    logIndex: event.logIndex,
+    transactionHash: event.transaction.hash,
+    version: 1,
+    tokenType: "Signup",
+    tokenOwner: event.params.user,
+  };
+
+  context.Token.set(tokenEntity);
+
   await incrementStats(context, "signups");
 });
 
 HubV2.RegisterHuman.handler(async ({ event, context }) => {
-  const avatarEntity: Avatar = {
-    id: event.params.avatar,
-    avatarType: "RegisterHuman",
-    blockNumber: event.block.number,
-    timestamp: event.block.timestamp,
-    transactionHash: event.transaction.hash,
-    invitedBy: undefined,
-    version: 2,
-    logIndex: event.logIndex,
-    tokenId: bytesToBigInt(toBytes(event.params.avatar)).toString(),
-    cidV0Digest: undefined,
-    name: undefined,
-    transactionIndex: event.transaction.transactionIndex,
-    wrappedTokenId: undefined,
-    balance: 0n,
-  };
-
-  context.Avatar.set(avatarEntity);
-  await incrementStats(context, "signups");
+  const avatar = await context.Avatar.get(event.params.avatar);
+  if (avatar) {
+    context.Avatar.set({
+      ...avatar,
+      avatarType: "RegisterHuman",
+      version: 2,
+      tokenId: bytesToBigInt(toBytes(event.params.avatar)).toString(),
+    });
+  } else {
+    const avatarEntity: Avatar = {
+      id: event.params.avatar,
+      avatarType: "RegisterHuman",
+      blockNumber: event.block.number,
+      timestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      invitedBy: undefined,
+      version: 2,
+      logIndex: event.logIndex,
+      tokenId: bytesToBigInt(toBytes(event.params.avatar)).toString(),
+      cidV0Digest: undefined,
+      name: undefined,
+      transactionIndex: event.transaction.transactionIndex,
+      wrappedTokenId: undefined,
+      balance: 0n,
+      lastMint: 0n
+    };
+  
+    context.Avatar.set(avatarEntity);
+    await incrementStats(context, "signups");
+  }
 });
 
 HubV2.InviteHuman.handler(async ({ event, context }) => {
@@ -137,6 +169,7 @@ HubV2.InviteHuman.handler(async ({ event, context }) => {
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
     balance: 0n,
+    lastMint: 0n
   };
 
   context.Avatar.set(avatarEntity);
@@ -159,6 +192,7 @@ HubV2.RegisterOrganization.handler(async ({ event, context }) => {
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
     balance: 0n,
+    lastMint: 0n
   };
 
   context.Avatar.set(avatarEntity);
@@ -181,6 +215,7 @@ HubV2.RegisterGroup.handler(async ({ event, context }) => {
     transactionIndex: event.transaction.transactionIndex,
     wrappedTokenId: undefined,
     balance: 0n,
+    lastMint: 0n
   };
 
   context.Avatar.set(avatarEntity);
@@ -202,13 +237,13 @@ HubV2.ApprovalForAll.handler(async ({ event, context }) => {
 });
 
 HubV2.PersonalMint.handler(async ({ event, context }) => {
-  // const avatar = await context.Avatar.get(event.params.human);
-  // if (avatar) {
-  //   context.Avatar.set({
-  //     ...avatar,
-  //     lastMint: event.params.endPeriod,
-  //   });
-  // }
+  const avatar = await context.Avatar.get(event.params.human);
+  if (avatar) {
+    context.Avatar.set({
+      ...avatar,
+      lastMint: event.params.endPeriod,
+    });
+  }
 });
 
 HubV2.URI.handler(async ({ event, context }) => {
@@ -250,7 +285,6 @@ const updateAvatarBalance = async (
       isWrapped,
     });
   }
-
   if (avatar) {
     context.Avatar.set({
       ...avatar,
@@ -285,6 +319,24 @@ const handleTransfer = async ({
   let isWrapped = transferType === "Erc20WrapperTransfer";
 
   for (let i = 0; i < tokens.length; i++) {
+
+    const token = await context.Token.get(tokens[i]);
+    if (!token) {
+      context.Token.set({
+        id: tokens[i],
+        blockNumber: event.block.number,
+        timestamp: event.block.timestamp,
+        transactionIndex: event.transaction.transactionIndex,
+        logIndex: event.logIndex,
+        transactionHash: event.transaction.hash,
+        version,
+        // TODO: fix
+        tokenType: "RegisterHuman",
+        // TODO: fix
+        tokenOwner: event.params.to,
+      });
+    }
+
     const transferEntity: Transfer = {
       id: event.transaction.hash,
       blockNumber: event.block.number,
