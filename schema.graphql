@@ -17,11 +17,12 @@ enum TransferType {
 }
 
 type Transfer {
-  # transaction hash
+  # id is: transactionHash-logIndex
   id: ID!
   blockNumber: Int!
   timestamp: Int!
   transactionIndex: Int!
+  transactionHash: String!
   logIndex: Int!
   # batchIndex: Int!
   # v1 or v2
@@ -72,6 +73,8 @@ type AvatarBalance {
   balance: BigInt!
   version: Int!
   isWrapped: Boolean!
+  inflationaryValue: BigInt
+  lastCalculated: Int
 }
 
 type Avatar {
@@ -104,6 +107,8 @@ enum TokenType {
   RegisterGroup
   RegisterHuman
   Signup
+  WrappedDemurrageToken
+  WrappedStaticToken
 }
 
 type Token {
