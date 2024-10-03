@@ -37,6 +37,19 @@ contracts:
   events:
   - event: ProxyCreation(address proxy, address masterCopy)
   - event: ERC20WrapperDeployed(address indexed avatar, address indexed erc20Wrapper, uint8 circlesType)
+- name: StandardTreasury
+  handler: src/EventHandlers.ts
+  events:
+  - event: CreateVault(address indexed group, address indexed vault)
+  - event: GroupMintSingle(address indexed group, uint256 indexed id, uint256 value, bytes userData)
+  - event: GroupMintBatch(address indexed group, uint256[] ids, uint256[] values, bytes userData)
+  - event: GroupRedeem(address indexed group, uint256 indexed id, uint256 value, bytes data)
+  - event: GroupRedeemCollateralReturn(address indexed group, address indexed to, uint256[] ids, uint256[] values)
+  - event: GroupRedeemCollateralBurn(address indexed group, uint256[] ids, uint256[] values)
+- name: NameRegistry
+  handler: src/EventHandlers.ts
+  events:
+  - event: UpdateMetadataDigest(address indexed avatar, bytes32 metadataDigest)
 - name: WrapperERC20Personal
   handler: src/EventHandlers.ts
   events:
@@ -48,6 +61,26 @@ contracts:
 
 
 networks:
+- id: 10200
+  start_block: 2211707
+  contracts:
+  - name: Hub
+    address:
+    - 0xdbF22D4e8962Db3b2F1d9Ff55be728A887e47710
+  - name: PersonalCRC
+  - name: HubV2
+    address:
+    - 0xb80feeDfEce647dDc709777D5094fACD157BA001
+  - name: ERC20Lift
+    address:
+    - 0xBD2D6Fbb6A702B04B750Bc9942fBaAE81187355E
+  - name: StandardTreasury
+    address:
+    - 0xC06ADED7950429FdF2023e139B076f6BaFf9Fe1C
+  - name: NameRegistry
+    address:
+    - 0x24b3fDCdD9fef844fB3094ef43c0A6Ac23a6dF9E
+  - name: WrapperERC20Personal
 - id: 100
   start_block: 12529458
   contracts:
@@ -50535,18 +50568,4 @@ networks:
     - 0x79D55F1BE3181aE4F8D482e6a4f1B5F8A2aa57E6
     - 0x7b95Bb86f5D358357D832F394F92DC9e555c1AB8
 
-# - id: 10200
-#   start_block: 2211707
-#   contracts:
-#   - name: Hub
-#     address:
-#     - 0xdbF22D4e8962Db3b2F1d9Ff55be728A887e47710
-#   - name: PersonalCRC
-#   - name: HubV2
-#     address:
-#     - 0xb80feeDfEce647dDc709777D5094fACD157BA001
-#   - name: ERC20Lift
-#     address:
-#     - 0xBD2D6Fbb6A702B04B750Bc9942fBaAE81187355E
-#   - name: WrapperERC20Personal
 rollback_on_reorg: true

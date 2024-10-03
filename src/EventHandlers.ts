@@ -15,6 +15,8 @@ import {
   HubV2_TransferBatch_eventArgs,
   WrapperERC20Personal_Transfer_eventArgs,
   Token,
+  StandardTreasury,
+  NameRegistry,
 } from "generated";
 import {
   toBytes,
@@ -58,7 +60,10 @@ ERC20Lift.ERC20WrapperDeployed.handler(async ({ event, context }) => {
     logIndex: event.logIndex,
     transactionHash: event.transaction.hash,
     version: 2,
-    tokenType: event.params.circlesType === 0n ? "WrappedDemurrageToken" : "WrappedStaticToken",
+    tokenType:
+      event.params.circlesType === 0n
+        ? "WrappedDemurrageToken"
+        : "WrappedStaticToken",
     tokenOwner: event.params.avatar,
   });
 });
@@ -260,6 +265,73 @@ HubV2.PersonalMint.handler(async ({ event, context }) => {
   }
 });
 
+StandardTreasury.CreateVault.handler(async ({ event, context }) => {
+  // TODO: Implement handler here
+});
+
+StandardTreasury.GroupMintSingle.handler(async ({ event, context }) => {
+  const avatar = await context.Avatar.get(event.params.group);
+  if (avatar) {
+    const balanceId = makeAvatarBalanceEntityId(
+      event.params.group,
+      event.params.id.toString()
+    );
+    const avatarBalance = await context.AvatarBalance.get(balanceId);
+    if (avatarBalance) {
+      context.AvatarBalance.set({
+        ...avatarBalance,
+        balance: avatarBalance.balance + event.params.value,
+      });
+    } else {
+      context.AvatarBalance.set({
+        id: makeAvatarBalanceEntityId(
+          event.params.group,
+          event.params.id.toString()
+        ),
+        token_id: event.params.id.toString(),
+        avatar_id: event.params.group,
+        balance: event.params.value,
+        inflationaryValue: 0n,
+        isWrapped: false,
+        lastCalculated: 0,
+        version: 2,
+      });
+    }
+  }
+});
+
+StandardTreasury.GroupMintBatch.handler(async ({ event, context }) => {
+  // TODO: Implement handler here
+});
+
+StandardTreasury.GroupRedeem.handler(async ({ event, context }) => {
+  // TODO: Implement handler here
+});
+
+StandardTreasury.GroupRedeemCollateralBurn.handler(
+  async ({ event, context }) => {
+    // TODO: Implement handler here
+  }
+);
+
+StandardTreasury.GroupRedeemCollateralReturn.handler(
+  async ({ event, context }) => {
+    // TODO: Implement handler here
+  }
+);
+
+// TODO: missing envent to redeeem from group
+
+NameRegistry.UpdateMetadataDigest.handler(async ({ event, context }) => {
+  const avatar = await context.Avatar.get(event.params.avatar);
+  if (avatar) {
+    context.Avatar.set({
+      ...avatar,
+      cidV0Digest: event.params.metadataDigest,
+    });
+  }
+});
+
 HubV2.URI.handler(async ({ event, context }) => {
   // TODO: Implement handler here
 });
@@ -292,7 +364,8 @@ const updateAvatarBalance = async (
       balance: avatarBalance.balance + amount,
     };
     if (inflationaryValue !== undefined) {
-      updated.inflationaryValue = (avatarBalance.inflationaryValue || 0n) + inflationaryValue;
+      updated.inflationaryValue =
+        (avatarBalance.inflationaryValue || 0n) + inflationaryValue;
     }
     context.AvatarBalance.set(updated);
   } else {
@@ -482,16 +555,16 @@ WrapperERC20Personal.DepositDemurraged.handler(async ({ event, context }) => {
 });
 
 WrapperERC20Personal.WithdrawDemurraged.handler(async ({ event, context }) => {
-  // await updateAvatarBalance(
-  //   context,
-  //   event.params.account,
-  //   event.srcAddress,
-  //   -event.params.amount,
-  //   2,
-  //   true,
-  //   undefined,
-  //   undefined
-  // );
+  await updateAvatarBalance(
+    context,
+    event.params.account,
+    event.srcAddress,
+    0n,
+    2,
+    true,
+    -event.params.inflationaryAmount,
+    event.block.timestamp
+  );
 });
 
 WrapperERC20Personal.DepositInflationary.handler(async ({ event, context }) => {
@@ -509,16 +582,16 @@ WrapperERC20Personal.DepositInflationary.handler(async ({ event, context }) => {
 
 WrapperERC20Personal.WithdrawInflationary.handler(
   async ({ event, context }) => {
-    // await updateAvatarBalance(
-    //   context,
-    //   event.params.account,
-    //   event.srcAddress,
-    //   -event.params.amount,
-    //   2,
-    //   true,
-    //   undefined,
-    //   undefined
-    // );
+    await updateAvatarBalance(
+      context,
+      event.params.account,
+      event.srcAddress,
+      0n,
+      2,
+      true,
+      -event.params.demurragedAmount,
+      event.block.timestamp
+    );
   }
 );
 
@@ -534,7 +607,14 @@ Hub.Trust.handler(async ({ event, context }) => {
   );
   if (event.params.limit === 0n) {
     // this is untrust
-    context.TrustRelation.deleteUnsafe(trustId);
+    const trustRelation = await context.TrustRelation.get(trustId);
+    if (trustRelation) {
+      context.TrustRelation.set({
+        ...trustRelation,
+        expiryTime: 0n,
+        limit: 0n,
+      });
+    }
     if (oppositeTrustRelation) {
       context.TrustRelation.set({
         ...oppositeTrustRelation,
@@ -578,7 +658,14 @@ HubV2.Trust.handler(async ({ event, context }) => {
     event.params.expiryTime - BigInt(event.block.timestamp);
   if (timeDifference < 3600n) {
     // this is untrust
-    context.TrustRelation.deleteUnsafe(trustId);
+    const trustRelation = await context.TrustRelation.get(trustId);
+    if (trustRelation) {
+      context.TrustRelation.set({
+        ...trustRelation,
+        expiryTime: 0n,
+        limit: 0n,
+      });
+    }
     if (oppositeTrustRelation) {
       context.TrustRelation.set({
         ...oppositeTrustRelation,
