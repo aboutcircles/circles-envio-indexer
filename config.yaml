@@ -61,29 +61,43 @@ contracts:
 
 
 networks:
-- id: 10200
-  start_block: 2211707
-  contracts:
-  - name: Hub
-    address:
-    - 0xdbF22D4e8962Db3b2F1d9Ff55be728A887e47710
-  - name: PersonalCRC
-  - name: HubV2
-    address:
-    - 0xb80feeDfEce647dDc709777D5094fACD157BA001
-  - name: ERC20Lift
-    address:
-    - 0xBD2D6Fbb6A702B04B750Bc9942fBaAE81187355E
-  - name: StandardTreasury
-    address:
-    - 0xC06ADED7950429FdF2023e139B076f6BaFf9Fe1C
-  - name: NameRegistry
-    address:
-    - 0x24b3fDCdD9fef844fB3094ef43c0A6Ac23a6dF9E
-  - name: WrapperERC20Personal
+# - id: 10200
+#   start_block: 2211707
+#   contracts:
+#   - name: Hub
+#     address:
+#     - 0xdbF22D4e8962Db3b2F1d9Ff55be728A887e47710
+#   - name: PersonalCRC
+#   - name: HubV2
+#     address:
+#     - 0xb80feeDfEce647dDc709777D5094fACD157BA001
+#   - name: ERC20Lift
+#     address:
+#     - 0xBD2D6Fbb6A702B04B750Bc9942fBaAE81187355E
+#   - name: StandardTreasury
+#     address:
+#     - 0xC06ADED7950429FdF2023e139B076f6BaFf9Fe1C
+#   - name: NameRegistry
+#     address:
+#     - 0x24b3fDCdD9fef844fB3094ef43c0A6Ac23a6dF9E
+#   - name: WrapperERC20Personal
 - id: 100
   start_block: 12529458
+  # start_block: 35732788
   contracts:
+  - name: HubV2
+    address:
+    - 0xa5c7ADAE2fd3844f12D52266Cb7926f8649869Da
+  # - name: ERC20Lift
+  #   address:
+  #   - 0xBD2D6Fbb6A702B04B750Bc9942fBaAE81187355E
+  # - name: StandardTreasury
+  #   address:
+  #   - 0xC06ADED7950429FdF2023e139B076f6BaFf9Fe1C
+  # - name: NameRegistry
+  #   address:
+  #   - 0x24b3fDCdD9fef844fB3094ef43c0A6Ac23a6dF9E
+  # - name: WrapperERC20Personal
   - name: Hub
     address:
     - 0x29b9a7fBb8995b2423a71cC17cf9810798F6C543
@@ -50568,4 +50582,4 @@ networks:
     - 0x79D55F1BE3181aE4F8D482e6a4f1B5F8A2aa57E6
     - 0x7b95Bb86f5D358357D832F394F92DC9e555c1AB8
 
-rollback_on_reorg: true
+rollback_on_reorg: false
