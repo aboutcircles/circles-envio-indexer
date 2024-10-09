@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       envio:
-        specifier: 2.3.0
-        version: 2.3.0
+        specifier: 2.4.3
+        version: 2.4.3
       viem:
         specifier: 2.21.0
         version: 2.21.0(typescript@5.2.2)
@@ -111,13 +111,13 @@ importers:
         version: 11.1.3
       rescript-envsafe:
         specifier: 4.2.0
-        version: 4.2.0(rescript-schema@8.0.0(rescript@11.1.3))(rescript@11.1.3)
+        version: 4.2.0(rescript-schema@8.2.0(rescript@11.1.3))(rescript@11.1.3)
       rescript-express:
         specifier: 0.4.1
         version: 0.4.1(express@4.19.2)
       rescript-schema:
-        specifier: 8.0.0
-        version: 8.0.0(rescript@11.1.3)
+        specifier: 8.2.0
+        version: 8.2.0(rescript@11.1.3)
       root:
         specifier: ../.
         version: link:..
@@ -562,28 +562,28 @@ packages:
   end-of-stream@1.4.4:
     resolution: {integrity: sha512-+uw1inIHVPQoaVuHzRyXd21icM+cnt4CzD5rW+NC1wjOUSTOs+Te7FOv7AhN7vS9x/oIyhLP5PR1H+phQAHu5Q==}
 
-  envio-darwin-arm64@2.3.0:
-    resolution: {integrity: sha512-tmcpAsZ+/hGXCGVEWjqys1JRuXtR46mnwo4NXnc6wl2htOumDWfnxB7VAhAcSG2M6eQK23yMksnq5YFTg8MAOA==}
+  envio-darwin-arm64@2.4.3:
+    resolution: {integrity: sha512-YkQ2c/GhEvvQ5l5jD7lc2llITXVG8q8oYyLNCzbqxcMMwo3K58zvTUtoxQBVRv4qyhWW68BJZs+vytCaecMJUA==}
     cpu: [arm64]
     os: [darwin]
 
-  envio-darwin-x64@2.3.0:
-    resolution: {integrity: sha512-eENHMKC1ZzactvmhuFI6R+hHAX3Lc76MMRQAOSzUNVHi9rKtWpiqcZmbs0ImOUwKvgrxV8FzK2p0Evl7Cw6c1A==}
+  envio-darwin-x64@2.4.3:
+    resolution: {integrity: sha512-NWLlFu03avRisSX+vR6a9uUf8E4mtrUjbsCDHfrXfmFPdTZEVRYB3LDKboGMRR3S9JEPkTCfKaAaTDdW5TSTug==}
     cpu: [x64]
     os: [darwin]
 
-  envio-linux-arm64@2.3.0:
-    resolution: {integrity: sha512-V2xvk3lmNCMNLqPGGy1Oi5x/DyVpkgVoVsZhbb1Mz9FHffa+95t4k1EvaJwMNjeXfKnt5XueRqkTm/GSG5O/Sw==}
+  envio-linux-arm64@2.4.3:
+    resolution: {integrity: sha512-ERuI769ULND/5iNQqv8S4t+iWYBYaMMmLfovgkWh0mLocjyeepUL4MZ+/Smm9b6iTFR946XCiSxHuvCEQafUUw==}
     cpu: [arm64]
     os: [linux]
 
-  envio-linux-x64@2.3.0:
-    resolution: {integrity: sha512-+gd8TS76nV1ouf8NTJjfcpp0xRAPwsiw6V76jKN10AnXqxk8eaubj+kBn7sX5P9ydmIjfkL+5nC34qS2GeXJ9Q==}
+  envio-linux-x64@2.4.3:
+    resolution: {integrity: sha512-m/V4e3ubxWuH6XLeeu2jJ5+tHSJ2/HphoQwzmxXjpf61ieZ9zqEMLz4+unWEJ4iwDRDaXtJDQeDW6rdPiXrKPA==}
     cpu: [x64]
     os: [linux]
 
-  envio@2.3.0:
-    resolution: {integrity: sha512-q8gQPGzAOKsg5E5W+cNGecnwRQfWSOho+Xs9cDyCUuE3/Pa8Oe9svB164/+TgnGaS09XUXwDNAmVE9dVFFw63w==}
+  envio@2.4.3:
+    resolution: {integrity: sha512-1UeCo0n9n9TUsPGAvZfijiuuc+EIczsp0ujDbti4txPhn0fKxr8BiLfvSzcLc+ltIgND6VVdMvB/hPLuE3dFCw==}
     hasBin: true
 
   es-define-property@1.0.0:
@@ -1218,8 +1218,8 @@ packages:
     peerDependencies:
       express: ^4.17.1
 
-  rescript-schema@8.0.0:
-    resolution: {integrity: sha512-+i/us90Q73HeRZ9Y6BXfogb0BXpfwDmmFhHI+dZkvnzGOLMQEx3kowXv78LfP2ujpedwpN85/aqEPXRb+eBtog==}
+  rescript-schema@8.2.0:
+    resolution: {integrity: sha512-pfRNB9kvafUYe+RgvsExiazJioi/iV8gmjK3xOw/jeSgPIIDoVhflnmpoz+vuiwlulYkNT/7u2+2EsCrph7QKA==}
     peerDependencies:
       rescript: 11.x
 
@@ -1935,24 +1935,24 @@ snapshots:
     dependencies:
       once: 1.4.0
 
-  envio-darwin-arm64@2.3.0:
+  envio-darwin-arm64@2.4.3:
     optional: true
 
-  envio-darwin-x64@2.3.0:
+  envio-darwin-x64@2.4.3:
     optional: true
 
-  envio-linux-arm64@2.3.0:
+  envio-linux-arm64@2.4.3:
     optional: true
 
-  envio-linux-x64@2.3.0:
+  envio-linux-x64@2.4.3:
     optional: true
 
-  envio@2.3.0:
+  envio@2.4.3:
     optionalDependencies:
-      envio-darwin-arm64: 2.3.0
-      envio-darwin-x64: 2.3.0
-      envio-linux-arm64: 2.3.0
-      envio-linux-x64: 2.3.0
+      envio-darwin-arm64: 2.4.3
+      envio-darwin-x64: 2.4.3
+      envio-linux-arm64: 2.4.3
+      envio-linux-x64: 2.4.3
 
   es-define-property@1.0.0:
     dependencies:
@@ -2543,16 +2543,16 @@ snapshots:
 
   require-directory@2.1.1: {}
 
-  rescript-envsafe@4.2.0(rescript-schema@8.0.0(rescript@11.1.3))(rescript@11.1.3):
+  rescript-envsafe@4.2.0(rescript-schema@8.2.0(rescript@11.1.3))(rescript@11.1.3):
     dependencies:
       rescript: 11.1.3
-      rescript-schema: 8.0.0(rescript@11.1.3)
+      rescript-schema: 8.2.0(rescript@11.1.3)
 
   rescript-express@0.4.1(express@4.19.2):
     dependencies:
       express: 4.19.2
 
-  rescript-schema@8.0.0(rescript@11.1.3):
+  rescript-schema@8.2.0(rescript@11.1.3):
     dependencies:
       rescript: 11.1.3
 
