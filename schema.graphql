@@ -19,10 +19,11 @@ enum TransferType {
 type Transfer {
   # id is: transactionHash-logIndex
   id: ID!
+  safeTxHash: String
   blockNumber: Int!
   timestamp: Int!
   transactionIndex: Int!
-  transactionHash: String!
+  transactionHash: String! @index
   logIndex: Int!
   # batchIndex: Int!
   # v1 or v2

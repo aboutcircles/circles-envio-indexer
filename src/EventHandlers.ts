@@ -17,6 +17,7 @@ import {
   Token,
   StandardTreasury,
   NameRegistry,
+  SafeAccount,
 } from "generated";
 import {
   toBytes,
@@ -170,6 +171,30 @@ HubV2.RegisterHuman.handler(async ({ event, context }) => {
     context.Avatar.set(avatarEntity);
     await incrementStats(context, "signups");
   }
+});
+
+HubV2.RegisterHuman.contractRegister(async ({ event, context }) => {
+  context.addSafeAccount(event.params.avatar);
+});
+
+SafeAccount.ExecutionSuccess.handlerWithLoader({
+  loader: async ({ event, context }) => {
+    let transfer = await context.Transfer.getWhere.transactionHash.eq(
+      event.transaction.hash
+    );
+
+    return { transfer: transfer[0] };
+  },
+  handler: async ({ event, context, loaderReturn }) => {
+    const { transfer } = loaderReturn;
+
+    if (transfer) {
+      context.Transfer.set({
+        ...transfer,
+        safeTxHash: event.params.txHash,
+      });
+    }
+  },
 });
 
 HubV2.InviteHuman.handler(async ({ event, context }) => {
@@ -433,6 +458,7 @@ const handleTransfer = async ({
 
     const transferEntity: Transfer = {
       id: `${event.transaction.hash}-${event.logIndex}`,
+      safeTxHash: undefined,
       blockNumber: event.block.number,
       timestamp: event.block.timestamp,
       transactionIndex: event.transaction.transactionIndex,
