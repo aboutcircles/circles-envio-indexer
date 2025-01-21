@@ -72,6 +72,7 @@ HubV2.RegisterHuman.handlerWithLoader({
         trustsReceivedCount: 0,
         invitedBy: event.params.inviter,
         migrated: true,
+        acceptedInvite: event.block.timestamp,
       });
     } else {
       context.Avatar.set({
@@ -82,6 +83,7 @@ HubV2.RegisterHuman.handlerWithLoader({
         token_id: bytesToBigInt(toBytes(event.params.avatar)).toString(),
         profile_id: event.params.avatar,
         invitedBy: event.params.inviter,
+        acceptedInvite: event.block.timestamp,
       });
       await incrementStats(context, "signups");
     }

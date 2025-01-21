@@ -44,5 +44,6 @@ export function defaultAvatarProps(event: eventLog<any>) {
     trustedByN: 0,
     isVerified: false,
     migrated: false,
+    acceptedInvite: 0,
   } as Avatar;
 }

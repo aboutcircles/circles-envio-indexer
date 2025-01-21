@@ -103,6 +103,7 @@ type Avatar {
   avatarType: AvatarType!
   # v2 only invited by
   invitedBy: String
+  acceptedInvite: Int!
   token: Token
   # v2 wrapped token id
   wrappedTokenId: String
