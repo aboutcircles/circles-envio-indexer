@@ -3,7 +3,6 @@ import {
   handlerContext,
   Hub_HubTransfer_eventArgs,
   PersonalCRC_Transfer_eventArgs,
-  Transfer,
   HubV2_TransferSingle_eventArgs,
   HubV2_TransferBatch_eventArgs,
   WrappedERC20_Transfer_eventArgs,
@@ -62,6 +61,7 @@ export const handleTransfer = async ({
       blockNumber: event.block.number,
       timestamp: event.block.timestamp,
       transactionIndex: event.transaction.transactionIndex,
+      transactionHash: event.transaction.hash,
     });
   }
   for (let i = 0; i < tokens.length; i++) {
@@ -117,9 +117,28 @@ export const handleTransfer = async ({
       }
     }
 
-    const transferEntity: Transfer = {
-      id: `${event.transaction.hash}-${event.logIndex}`,
-      transaction_id: event.transaction.hash,
+    const transferId = `${event.transaction.hash}-${event.logIndex}`;
+    if (event.params.to !== zeroAddress) {
+      const transactionTransferToId = `${event.transaction.hash}-${event.logIndex}-${event.params.to}`;
+      context.TransactionTransfer.set({
+        id: transactionTransferToId,
+        avatar_id: event.params.to,
+        transaction_id: event.transaction.hash,
+        transfer_id: transferId,
+      });
+    }
+    if (event.params.from !== zeroAddress) {
+      const transactionTransferFromId = `${event.transaction.hash}-${event.logIndex}-${event.params.from}`;
+      context.TransactionTransfer.set({
+        id: transactionTransferFromId,
+        avatar_id: event.params.from,
+        transaction_id: event.transaction.hash,
+        transfer_id: transferId,
+      });
+    }
+    context.Transfer.set({
+      id: transferId,
+      transactionHash: event.transaction.hash,
       logIndex: event.logIndex,
       from: event.params.from,
       to: event.params.to,
@@ -129,8 +148,7 @@ export const handleTransfer = async ({
       transferType,
       version,
       isPartOfStreamOrHub: false,
-    };
-    context.Transfer.set(transferEntity);
+    });
 
     await updateAvatarBalance(context, values[i], event.block.timestamp, {
       id: event.params.to,

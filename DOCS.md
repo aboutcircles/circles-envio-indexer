@@ -1,59 +1,70 @@
 ## Entities
 
-### Transfer
+### Transaction and Transfer
 A unified view of all transfer transactions within the system, consolidating both v1 and v2 transfers. This entity covers all major transfer events (e.g., `Erc20WrapperTransfer`, `TransferSingle`, `HubTransfer`).
 
-- **Key Fields:**
+This is constructed of three entities: `Transaction`, `TransactionTransfer`, and `Transfer`.
+
+`TransactionTransfer` is a join table that connects `Transaction` and `Transfer`. This is required because each transfer belongs to two users: the sender and the receiver. An important note, initially, there was only two entities - `Transaction` and `Transfer` - but queries were too slow. Using `TransactionTransfer` as join table and filtering, we made it five times faster.
+
+- **Transaction Key Fields:**
+  - `id`
+  - `safeTxHash`
   - `blockNumber`
   - `timestamp`
   - `transactionIndex`
-  - `logIndex`
-  - `batchIndex`
   - `transactionHash`
+  - `TransactionTransfers`
+
+- **TransactionTransfer Key Fields:**
+  - `id`
+  - `Avatar`
+  - `Transaction`
+  - `Transfer`
+
+- **Transfer Key Fields:**
+  - `id`
+  - `transactions`
+  - `transactionHash`
+  - `logIndex`
   - `version`
   - `operator` (v2 only)
   - `from`
   - `to`
-  - `id`
   - `value`
-  - `type` (transaction type; e.g., `Erc20WrapperTransfer`, `TransferSingle`, etc.)
-  - `tokenType` (e.g., `RegisterGroup`, `RegisterHuman`, etc.)
-
-#### Transfers with demurrage
-
-It's possible to get demurrages that happened during transfers or mints.
+  - `transferType` (transaction type; e.g., `Erc20WrapperTransfer`, `TransferSingle`, etc.)
+  - `token`
+  - `isPartOfStreamOrHub`
 
 ```graphql
 query getUserTransfers($address: String) {
-	Transfer(
-    where:{
-      to: {_eq:$address},
-      transferType: {_neq:"Demurrage"}
-    }
+	Transaction(
+    where: {transactionTransfers: {avatar_id: {_eq: $address}}},
+    offset: $offset,
+    limit: $limit,
     order_by: {timestamp: desc}
   ) {
     id
-    from { id }
-    to { id }
-    transferType
     timestamp
-    value
-    demurrageFrom {
-      id
-      value
-    }
-    demurrageTo {
-      id
-      from
-      value
+    blockNumber
+    safeTxHash
+    transactionHash
+    transactionTransfers(
+      where: {avatar_id: {_eq: $address}, transfer:{isPartOfStreamOrHub: {_eq:false}}}
+    ) {
+      transfer {
+        id
+        from
+        to
+        token
+        value
+        version
+        transferType
+      }
     }
   }
 }
 ```
-
-This would not list demurrages transfers on the list, only within the transfers when they happened.
-
-Normally, it's the `demurrageFrom` that contains the demurrage data. But if `transferType` is `StreamCompleted`, then, there might be the case that the user receiving the transfer will also have some demurrage applied. What is needed in that case to show data correctly is to compare `demurrageTo.from` with the user (on app). If it's the same, show `demurrageTo.value`, otherwise show `demurrageFrom.value`. In any on this cases, `demurrageTo` and `demurrageFrom` can be null.
 
 
 ### TrustRelation

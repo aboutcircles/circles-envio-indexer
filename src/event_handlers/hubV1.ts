@@ -1,9 +1,10 @@
 import { Hub, PersonalCRC } from "generated";
-import { maxUint256 } from "viem";
+import { maxUint256, zeroAddress } from "viem";
 import { incrementStats } from "../incrementStats";
 import { handleTransfer } from "../common/handleTransfer";
 import { defaultAvatarProps, makeAvatarBalanceEntityId } from "../utils";
 import { getProfileMetadataFromGardenApi } from "../gardenApi";
+import { Transfer_t } from "generated/src/db/Entities.gen";
 
 // ###############
 // #### TOKEN ####
@@ -106,7 +107,7 @@ PersonalCRC.Transfer.handler(
 
 Hub.HubTransfer.handlerWithLoader({
   loader: async ({ event, context }) => {
-    const transfers = await context.Transfer.getWhere.transaction_id.eq(
+    const transfers = await context.Transfer.getWhere.transactionHash.eq(
       event.transaction.hash
     );
 
@@ -122,9 +123,28 @@ Hub.HubTransfer.handlerWithLoader({
       });
     }
 
+    const transferId = `${event.transaction.hash}-stream`;
+    if (event.params.to !== zeroAddress) {
+      const transactionTransferToId = `${event.transaction.hash}-${event.logIndex}-${event.params.to}`;
+      context.TransactionTransfer.set({
+        id: transactionTransferToId,
+        avatar_id: event.params.to,
+        transaction_id: event.transaction.hash,
+        transfer_id: transferId,
+      });
+    }
+    if (event.params.from !== zeroAddress) {
+      const transactionTransferFromId = `${event.transaction.hash}-${event.logIndex}-${event.params.from}`;
+      context.TransactionTransfer.set({
+        id: transactionTransferFromId,
+        avatar_id: event.params.from,
+        transaction_id: event.transaction.hash,
+        transfer_id: transferId,
+      });
+    }
     context.Transfer.set({
-      id: `${event.transaction.hash}-stream`,
-      transaction_id: event.transaction.hash,
+      id: transferId,
+      transactionHash: event.transaction.hash,
       logIndex: event.logIndex,
       from: event.params.from,
       to: event.params.to,

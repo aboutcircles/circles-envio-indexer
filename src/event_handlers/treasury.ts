@@ -26,7 +26,7 @@ const loader: HandlerTypes_loader<
     transfers: Transfer_t[];
   }
 > = async ({ event, context }) => {
-  let transfers = await context.Transfer.getWhere.transaction_id.eq(
+  let transfers = await context.Transfer.getWhere.transactionHash.eq(
     event.transaction.hash
   );
 

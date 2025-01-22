@@ -25,18 +25,27 @@ enum TransferType {
 }
 
 type Transaction {
-  id: ID! # transactionHash
+  id: ID! # transactionHash-avatarId
   safeTxHash: String
   blockNumber: Int!
   timestamp: Int!
   transactionIndex: Int!
-  transfers: [Transfer!]! @derivedFrom(field: "transaction")
+  transactionHash: String! @index
+  transactionTransfers: [TransactionTransfer!]! @derivedFrom(field: "transaction")
+}
+
+type TransactionTransfer {
+  id: ID! # transactionHash-logIndex-avatarId
+  avatar: Avatar! @index
+  transaction: Transaction!
+  transfer: Transfer!
 }
 
 type Transfer {
   # id is: transactionHash-logIndex
   id: ID!
-  transaction: Transaction!
+  transactions: [TransactionTransfer!]! @derivedFrom(field: "transfer")
+  transactionHash: String! @index
   logIndex: Int!
   # v1 or v2
   version: Int!

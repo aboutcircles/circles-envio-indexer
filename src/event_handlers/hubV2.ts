@@ -182,7 +182,7 @@ HubV2.PersonalMint.handlerWithLoader({
   loader: async ({ event, context }) => {
     const [avatar, transfers] = await Promise.all([
       context.Avatar.get(event.params.human),
-      context.Transfer.getWhere.transaction_id.eq(event.transaction.hash),
+      context.Transfer.getWhere.transactionHash.eq(event.transaction.hash),
     ]);
 
     return {
@@ -263,7 +263,7 @@ NameRegistry.UpdateMetadataDigest.handler(async ({ event, context }) => {
 
 HubV2.StreamCompleted.handlerWithLoader({
   loader: async ({ event, context }) => {
-    let transfers = await context.Transfer.getWhere.transaction_id.eq(
+    let transfers = await context.Transfer.getWhere.transactionHash.eq(
       event.transaction.hash
     );
 
@@ -273,15 +273,40 @@ HubV2.StreamCompleted.handlerWithLoader({
     const { transfers } = loaderReturn;
 
     for (let i = 0; i < transfers.length; i++) {
+      if (
+        transfers[i].transferType !== "TransferSingle" &&
+        transfers[i].transferType !== "TransferBatch"
+      ) {
+        continue;
+      }
       context.Transfer.set({
         ...transfers[i],
         isPartOfStreamOrHub: true,
       });
     }
 
+    const transferId = `${event.transaction.hash}-stream`;
+    if (event.params.to !== zeroAddress) {
+      const transactionTransferToId = `${event.transaction.hash}-${event.logIndex}-${event.params.to}`;
+      context.TransactionTransfer.set({
+        id: transactionTransferToId,
+        avatar_id: event.params.to,
+        transaction_id: event.transaction.hash,
+        transfer_id: transferId,
+      });
+    }
+    if (event.params.from !== zeroAddress) {
+      const transactionTransferFromId = `${event.transaction.hash}-${event.logIndex}-${event.params.from}`;
+      context.TransactionTransfer.set({
+        id: transactionTransferFromId,
+        avatar_id: event.params.from,
+        transaction_id: event.transaction.hash,
+        transfer_id: transferId,
+      });
+    }
     context.Transfer.set({
-      id: `${event.transaction.hash}-stream`,
-      transaction_id: event.transaction.hash,
+      id: transferId,
+      transactionHash: event.transaction.hash,
       logIndex: event.logIndex,
       from: event.params.from,
       to: event.params.to,
@@ -343,7 +368,7 @@ HubV2.DiscountCost.handlerWithLoader({
       event.params.id.toString()
     );
     const avatarBalance = await context.AvatarBalance.get(avatarBalanceId);
-    const transfers = await context.Transfer.getWhere.transaction_id.eq(
+    const transfers = await context.Transfer.getWhere.transactionHash.eq(
       event.transaction.hash
     );
 
