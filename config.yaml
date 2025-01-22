@@ -70,6 +70,11 @@ contracts:
     handler: src/event_handlers/hubV2.ts
     events:
       - event: ExecutionSuccess(bytes32 txHash, uint256 payment)
+  - name: CirclesBacking
+    handler: src/event_handlers/circlesBacking.ts
+    events:
+      - event: CirclesBackingInitiated(address indexed backer, address indexed circlesBackingInstance, address backingAsset, address personalCirclesAddress)
+      - event: CirclesBackingCompleted(address indexed backer, address indexed circlesBackingInstance, address lbp)
 
 networks:
   # - id: 10200
@@ -115,3 +120,6 @@ networks:
         address:
           - 0x29b9a7fBb8995b2423a71cC17cf9810798F6C543
       - name: PersonalCRC
+      - name: CirclesBacking
+        address:
+          - 0x4bB5A425a68ed73Cf0B26ce79F5EEad9103C30fc
