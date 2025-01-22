@@ -170,9 +170,9 @@ type CirclesBacking {
   completedTx: String
   completedLogIndex: Int
   # Common data
-  circlesBackingInstance: String!
-  backer: Avatar!
-  backingAsset: String!
-  personalCirclesAddress: String!
-  lbpAddress: String # nullable until completion
+  circlesBackingInstance: String! # The CirclesBacking instance address deployed by the factory
+  backer: Avatar! # Who initiated the backing (backer)
+  backingAsset: String! # Which asset is being used for backing
+  personalCirclesAddress: String! # The address of the personal Circles token being backed
+  lbpAddress: String # nullable until completion, the address of the created LBP (Liquidity Bootstrapping Pool)
 }
