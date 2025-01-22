@@ -72,6 +72,7 @@ HubV2.RegisterHuman.handlerWithLoader({
         trustsReceivedCount: 0,
         invitedBy: event.params.inviter,
         migrated: true,
+        acceptedInvite: event.block.timestamp,
       });
     } else {
       context.Avatar.set({
@@ -82,6 +83,7 @@ HubV2.RegisterHuman.handlerWithLoader({
         token_id: bytesToBigInt(toBytes(event.params.avatar)).toString(),
         profile_id: event.params.avatar,
         invitedBy: event.params.inviter,
+        acceptedInvite: event.block.timestamp,
       });
       await incrementStats(context, "signups");
     }
@@ -422,31 +424,33 @@ HubV2.Trust.handlerWithLoader({
 
     const isUntrust = event.params.expiryTime < 2_000_000_000n;
 
-    if (!avatarTrustee) {
-      context.Avatar.set({
-        ...defaultAvatarProps(event),
-        version: 2,
-        id: event.params.trustee,
-        avatarType: "Invite",
-        profile_id: event.params.trustee,
-        trustsReceivedCount: 1,
-      });
-    } else {
-      const newTrustsReceivedCount = isUntrust
-        ? avatarTrustee.trustsReceivedCount - 1
-        : avatarTrustee.trustsReceivedCount + 1;
-      context.Avatar.set({
-        ...avatarTrustee,
-        trustsReceivedCount: newTrustsReceivedCount,
-        isVerified: newTrustsReceivedCount >= 3,
-        avatarType:
-          avatarTrustee.avatarType === "Unknown"
-            ? "Invite"
-            : avatarTrustee.avatarType,
-      });
+    if (avatarTruster && avatarTruster.avatarType === "RegisterHuman") {
+      if (!avatarTrustee) {
+        context.Avatar.set({
+          ...defaultAvatarProps(event),
+          version: 2,
+          id: event.params.trustee,
+          avatarType: "Invite",
+          profile_id: event.params.trustee,
+          trustsReceivedCount: 1,
+        });
+      } else {
+        const newTrustsReceivedCount = isUntrust
+          ? avatarTrustee.trustsReceivedCount - 1
+          : avatarTrustee.trustsReceivedCount + 1;
+        context.Avatar.set({
+          ...avatarTrustee,
+          trustsReceivedCount: newTrustsReceivedCount,
+          isVerified: newTrustsReceivedCount >= 3,
+          avatarType:
+            avatarTrustee.avatarType === "Unknown"
+              ? "Invite"
+              : avatarTrustee.avatarType,
+        });
+      }
     }
 
-    if (avatarTruster) {
+    if (avatarTruster && avatarTrustee && avatarTrustee.avatarType === "RegisterHuman") {
       const newTrustGivenCount = isUntrust
         ? avatarTruster.trustsGivenCount - 1
         : avatarTruster.trustsGivenCount + 1;
