@@ -2,41 +2,42 @@ import { CirclesBacking } from "generated";
 
 CirclesBacking.CirclesBackingInitiated.handler(async ({ event, context }) => {
   context.CirclesBacking.set({
-    id: event.transaction.hash,
-    blockNumber: event.block.number,
-    timestamp: event.block.timestamp,
-    transactionIndex: event.transaction.transactionIndex,
-    logIndex: event.logIndex,
-    transactionHash: event.transaction.hash,
+    id: event.params.circlesBackingInstance,
+    // initiation details
+    initiatedAt: event.block.timestamp,
+    initiatedBlock: event.block.number,
+    initiatedTx: event.transaction.hash,
+    initiatedLogIndex: event.logIndex,
+    // common data
     circlesBackingInstance: event.params.circlesBackingInstance,
     personalCirclesAddress: event.params.personalCirclesAddress,
     backer_id: event.params.backer,
     backingAsset: event.params.backingAsset,
-    lbpAddress: "",
+    lbpAddress: undefined,
+    // completion fields start as undefined
+    completedAt: undefined,
+    completedBlock: undefined,
+    completedTx: undefined,
+    completedLogIndex: undefined,
   });
 });
 
 CirclesBacking.CirclesBackingCompleted.handler(async ({ event, context }) => {
   const circlesBacking = await context.CirclesBacking.get(
-    event.transaction.hash
+    event.params.circlesBackingInstance
   );
 
-  // If the circles backing is not found, return
   if (!circlesBacking) {
     return;
   }
 
   context.CirclesBacking.set({
-    id: event.transaction.hash,
-    blockNumber: event.block.number,
-    timestamp: event.block.timestamp,
-    transactionIndex: event.transaction.transactionIndex,
-    logIndex: event.logIndex,
-    transactionHash: event.transaction.hash,
-    backer_id: event.params.backer,
-    circlesBackingInstance: event.params.circlesBackingInstance,
+    ...circlesBacking,
+    // completion details
+    completedAt: event.block.timestamp,
+    completedBlock: event.block.number,
+    completedTx: event.transaction.hash,
+    completedLogIndex: event.logIndex,
     lbpAddress: event.params.lbp,
-    personalCirclesAddress: circlesBacking.personalCirclesAddress,
-    backingAsset: circlesBacking.backingAsset,
   });
 });
