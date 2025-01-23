@@ -91,19 +91,59 @@ Hub.Signup.handlerWithLoader({
 // ## TRANSFERS ##
 // ###############
 
-PersonalCRC.Transfer.handler(
-  async ({ event, context }) =>
-    await handleTransfer({
+PersonalCRC.Transfer.handlerWithLoader({
+  loader: async ({ event, context }) => {
+    const tokenId = event.srcAddress;
+    const avatarBalanceIdTo = makeAvatarBalanceEntityId(
+      event.params.to,
+      tokenId
+    );
+    const avatarBalanceIdFrom = makeAvatarBalanceEntityId(
+      event.params.from,
+      tokenId
+    );
+
+    const [tokenOrNull, avatarBalanceToOrNull, avatarBalanceFromOrNull, transaction] =
+      await Promise.all([
+        context.Token.get(tokenId),
+        context.AvatarBalance.get(avatarBalanceIdTo),
+        context.AvatarBalance.get(avatarBalanceIdFrom),
+        context.Transaction.get(event.transaction.hash),
+      ]);
+
+    const token = tokenOrNull ?? {
+      id: tokenId,
+    };
+    const avatarBalanceTo = avatarBalanceToOrNull ?? {
+      avatar_id: event.params.to,
+      token_id: tokenId,
+    };
+
+    const avatarBalanceFrom = avatarBalanceFromOrNull ?? {
+      avatar_id: event.params.from,
+      token_id: tokenId,
+    };
+    return {
+      token,
+      avatarsBalance: [{ to: avatarBalanceTo, from: avatarBalanceFrom }],
+      transaction,
+    };
+  },
+  handler: async ({ event, context, loaderReturn }) => {
+    const { token, avatarsBalance, transaction } = loaderReturn;
+    handleTransfer({
       event,
       context,
-      operator: undefined,
+      hasTransaction: transaction !== undefined,
+      avatarsBalance,
+      tokens: [token],
       values: [event.params.amount],
-      tokens: [event.srcAddress],
       transferType: "Transfer",
       avatarType: "Signup",
       version: 1,
-    })
-);
+    });
+  },
+});
 
 Hub.HubTransfer.handlerWithLoader({
   loader: async ({ event, context }) => {

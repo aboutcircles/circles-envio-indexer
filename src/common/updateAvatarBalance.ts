@@ -1,20 +1,20 @@
-import { AvatarBalance, handlerContext } from "generated";
+import { handlerContext } from "generated";
 import { zeroAddress } from "viem";
 import { makeAvatarBalanceEntityId } from "../utils";
+import { AvatarBalance_t } from "generated/src/db/Entities.gen";
 
-export const updateAvatarBalance = async (
+export const updateAvatarBalance = (
+  avatarBalance: AvatarBalance_t | { avatar_id: string, token_id: string },
   context: handlerContext,
   amount: bigint,
-  blockTimestamp: number,
-  options: Partial<AvatarBalance>
+  blockTimestamp: number
 ) => {
-  const { id: avatarId, token_id: tokenId } = options;
+  const { avatar_id: avatarId, token_id: tokenId } = avatarBalance;
   if (avatarId === zeroAddress || !avatarId || !tokenId) {
     return;
   }
-  const balanceId = makeAvatarBalanceEntityId(avatarId, tokenId);
-  const avatarBalance = await context.AvatarBalance.get(balanceId)
-  if (avatarBalance) {
+  const avatarBalanceId = makeAvatarBalanceEntityId(avatarId, tokenId);
+  if ('balance' in avatarBalance) {
     context.AvatarBalance.set({
       ...avatarBalance,
       balance: avatarBalance.balance + amount,
@@ -23,7 +23,7 @@ export const updateAvatarBalance = async (
     });
   } else {
     context.AvatarBalance.set({
-      id: balanceId,
+      id: avatarBalanceId,
       avatar_id: avatarId,
       token_id: tokenId,
       balance: amount,

@@ -13,6 +13,7 @@ import { Profile } from "../types";
 import { handleTransfer } from "../common/handleTransfer";
 import { getProfileMetadataFromIpfs } from "../ipfs";
 import { METRI_FEE_SAFE_ADDRESS } from "../constants";
+import { AvatarBalance_t, Token_t } from "generated/src/db/Entities.gen";
 
 // ###############
 // #### TOKEN ####
@@ -263,7 +264,7 @@ NameRegistry.UpdateMetadataDigest.handler(async ({ event, context }) => {
 
 HubV2.StreamCompleted.handlerWithLoader({
   loader: async ({ event, context }) => {
-    let transfers = await context.Transfer.getWhere.transactionHash.eq(
+    const transfers = await context.Transfer.getWhere.transactionHash.eq(
       event.transaction.hash
     );
 
@@ -324,19 +325,57 @@ HubV2.StreamCompleted.handlerWithLoader({
 
 HubV2.TransferSingle.handlerWithLoader({
   loader: async ({ event, context }) => {
-    const avatar = await context.Avatar.get(event.params.to);
+    const tokenId = event.params.id.toString();
+    const avatarBalanceIdTo = makeAvatarBalanceEntityId(
+      event.params.to,
+      tokenId
+    );
+    const avatarBalanceIdFrom = makeAvatarBalanceEntityId(
+      event.params.from,
+      tokenId
+    );
+    const [
+      avatar,
+      tokenOrNull,
+      avatarBalanceToOrNull,
+      avatarBalanceFromOrNull,
+      transaction,
+    ] = await Promise.all([
+      context.Avatar.get(event.params.to),
+      context.Token.get(tokenId),
+      context.AvatarBalance.get(avatarBalanceIdTo),
+      context.AvatarBalance.get(avatarBalanceIdFrom),
+      context.Transaction.get(event.transaction.hash),
+    ]);
 
-    return { avatar };
+    const token = tokenOrNull || { id: tokenId };
+    const avatarBalanceTo = avatarBalanceToOrNull || {
+      avatar_id: event.params.to,
+      token_id: tokenId,
+    };
+
+    const avatarBalanceFrom = avatarBalanceFromOrNull || {
+      avatar_id: event.params.from,
+      token_id: tokenId,
+    };
+
+    return {
+      avatar,
+      token,
+      avatarsBalance: [{ to: avatarBalanceTo, from: avatarBalanceFrom }],
+      transaction,
+    };
   },
   handler: async ({ event, context, loaderReturn }) => {
-    const { avatar } = loaderReturn;
+    const { avatar, token, avatarsBalance, transaction } = loaderReturn;
 
-    await handleTransfer({
+    handleTransfer({
       event,
       context,
-      operator: event.params.operator,
+      hasTransaction: transaction !== undefined,
+      avatarsBalance,
+      tokens: [token],
       values: [event.params.value],
-      tokens: [event.params.id.toString()],
       transferType:
         event.params.to === METRI_FEE_SAFE_ADDRESS
           ? "MetriFee"
@@ -347,19 +386,61 @@ HubV2.TransferSingle.handlerWithLoader({
   },
 });
 
-HubV2.TransferBatch.handler(
-  async ({ event, context }) =>
-    await handleTransfer({
+HubV2.TransferBatch.handlerWithLoader({
+  loader: async ({ event, context }) => {
+    const tokenIds = event.params.ids.map((id) => id.toString());
+
+    const tokens = (
+      await Promise.all(tokenIds.map((id) => context.Token.get(id)))
+    ).map((t, i) => t ?? { id: tokenIds[i] });
+    const avatarBalancesFrom = (
+      await Promise.all(
+        tokenIds.map((id) =>
+          context.AvatarBalance.get(
+            makeAvatarBalanceEntityId(event.params.from, id)
+          )
+        )
+      )
+    ).map(
+      (t, i) => t ?? { avatar_id: event.params.from, token_id: tokenIds[i] }
+    );
+    const avatarBalancesTo = (
+      await Promise.all(
+        tokenIds.map((id) =>
+          context.AvatarBalance.get(
+            makeAvatarBalanceEntityId(event.params.to, id)
+          )
+        )
+      )
+    ).map((t, i) => t ?? { avatar_id: event.params.to, token_id: tokenIds[i] });
+    const transaction = await context.Transaction.get(event.transaction.hash);
+
+    const avatarsBalance = tokenIds.map((_, i) => ({
+      to: avatarBalancesTo[i],
+      from: avatarBalancesFrom[i],
+    }));
+
+    return {
+      tokens,
+      avatarsBalance,
+      transaction,
+    };
+  },
+  handler: async ({ event, context, loaderReturn }) => {
+    const { tokens, avatarsBalance, transaction } = loaderReturn;
+    handleTransfer({
       event,
       context,
-      operator: event.params.operator,
+      hasTransaction: transaction !== undefined,
+      avatarsBalance,
+      tokens,
       values: event.params.values,
-      tokens: event.params.ids.map((id) => id.toString()),
-      transferType: "TransferSingle",
+      transferType: "TransferBatch",
       avatarType: "Unknown",
       version: 2,
-    })
-);
+    });
+  },
+});
 
 HubV2.DiscountCost.handlerWithLoader({
   loader: async ({ event, context }) => {
@@ -475,7 +556,11 @@ HubV2.Trust.handlerWithLoader({
       }
     }
 
-    if (avatarTruster && avatarTrustee && avatarTrustee.avatarType === "RegisterHuman") {
+    if (
+      avatarTruster &&
+      avatarTrustee &&
+      avatarTrustee.avatarType === "RegisterHuman"
+    ) {
       const newTrustGivenCount = isUntrust
         ? avatarTruster.trustsGivenCount - 1
         : avatarTruster.trustsGivenCount + 1;

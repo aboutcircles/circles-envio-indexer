@@ -12,18 +12,54 @@ import { makeAvatarBalanceEntityId } from "../utils";
 
 WrappedERC20.Transfer.handlerWithLoader({
   loader: async ({ event, context }) => {
-    let avatar = await context.Avatar.get(event.params.to);
+    const tokenId = event.srcAddress;
+    const avatarBalanceIdTo = makeAvatarBalanceEntityId(
+      event.params.to,
+      tokenId
+    );
+    const avatarBalanceIdFrom = makeAvatarBalanceEntityId(
+      event.params.from,
+      tokenId
+    );
+    const [
+      avatar,
+      tokenOrNull,
+      avatarBalanceToOrNull,
+      avatarBalanceFromOrNull,
+      transaction,
+    ] = await Promise.all([
+      context.Avatar.get(event.params.to),
+      context.Token.get(tokenId),
+      context.AvatarBalance.get(avatarBalanceIdTo),
+      context.AvatarBalance.get(avatarBalanceIdFrom),
+      context.Transaction.get(event.transaction.hash),
+    ]);
+    const token = tokenOrNull ?? { id: tokenId };
+    const avatarBalanceTo = avatarBalanceToOrNull ?? {
+      avatar_id: event.params.to,
+      token_id: tokenId,
+    };
 
-    return { avatar };
+    const avatarBalanceFrom = avatarBalanceFromOrNull ?? {
+      avatar_id: event.params.from,
+      token_id: tokenId,
+    };
+    return {
+      avatar,
+      token,
+      avatarsBalance: [{ to: avatarBalanceTo, from: avatarBalanceFrom }],
+      transaction,
+    };
   },
   handler: async ({ event, context, loaderReturn }) => {
-    const { avatar } = loaderReturn;
-    await handleTransfer({
+    const { avatar, token, avatarsBalance, transaction } = loaderReturn;
+    handleTransfer({
       event,
       context,
-      operator: undefined,
+      hasTransaction: transaction !== undefined,
+      avatarsBalance,
+      tokens: [token],
       values: [event.params.value],
-      tokens: [event.srcAddress],
       transferType: "Erc20WrapperTransfer",
       avatarType: avatar?.avatarType ?? "Unknown",
       version: 2,
