@@ -74,7 +74,7 @@ contracts:
     handler: src/event_handlers/circlesBacking.ts
     events:
       - event: CirclesBackingInitiated(address indexed backer, address indexed circlesBackingInstance, address backingAsset, address personalCirclesAddress)
-      - event: CirclesBackingCompleted(address indexed backer, address indexed circlesBackingInstance, address lbp)
+      - event: CirclesBackingCompleted(address indexed backer, address indexed circlesBackingInstance, address indexed lbp)
 
 networks:
   # - id: 10200
